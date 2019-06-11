@@ -4,7 +4,7 @@ EXTENSION=.exe
 
 # These are important
 LDIRS=
-LIBS=-lsetupapi
+LIBS=-lsetupapi -lIphlpapi
 EXTRA_CFLAGS=-static -static-libgcc -static-libstdc++
 PLATFORM=windows
 
