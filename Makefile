@@ -35,11 +35,8 @@ CLASSES=$(foreach classname, $(CLASSLIST),$(ODIR2)/$(classname).o)
 OBJS=$(TARGET).o $(CLASSES)
 OBJ=$(patsubst %,$(ODIR)/%,$(OBJS))
 
-$(TARGET)$(EXTENSION): $(OBJ) $(ODIR)/hid.o
+$(TARGET)$(EXTENSION): $(OBJ) $(ODIR)/Joycon.o $(ODIR)/hid.o
 	$(CC) -g -o $@ $^ $(CPPFLAGS)
-
-$(ODIR)/$(ODIR2)/%.o: %/*.cpp %/*.h
-	$(CC) -c -o $@ $< $(CPPFLAGS)
 
 $(ODIR)/hid.o: libs/hidapi/$(PLATFORM)/hid.c
 	gcc -c -o $@ $< $(CFLAGS)
