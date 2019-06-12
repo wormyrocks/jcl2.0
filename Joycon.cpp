@@ -1,13 +1,31 @@
 #include <Joycon.h>
+#include "helpers.h"
 
-void JoyCon::joycon_main_loop()
+void JoyCon::jcSetup()
 {
-    printf("hi\n");
+    setup_joycon(jc, 0x1);
+    printf("jcSetup\n");
+}
+
+void JoyCon::jcLoop()
+{
+    printf("jcLoop\n");
 }
 bool JoyCon::isConnected() { return 0; };
 
-JoyCon::JoyCon(hid_device *handle_, JCType type_)
+JoyCon::JoyCon(hid_device *handle_, JCType type_, char *hostmac_)
 {
     jc = handle_;
-    type = type_;
+    jtype = type_;
+    hostmac = string(hostmac_);
+}
+
+void JoyCon::Cleanup()
+{
+}
+
+void JoyCon::Begin()
+{
+    jcSetup();
+    jcLoop();
 }

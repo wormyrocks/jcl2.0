@@ -16,24 +16,39 @@
 class JoyCon
 {
 public:
-    JoyCon(hid_device *handle, JCType type);
-    void joycon_main_loop();
+    //commands
+    JoyCon(hid_device *handle, JCType jtype, char *hostmac);
+    void Begin();
+    void Cleanup();
+
+    //getters and setters
     bool isConnected();
 
     //one liners
-    bool isLeft() { return (type == JCType::LEFT); }
-    bool isRight() { return (type == JCType::RIGHT); }
-    bool isPro() { return (type == JCType::PRO); }
+    bool isLeft() { return (jtype == JCType::LEFT); }
+    bool isRight() { return (jtype == JCType::RIGHT); }
+    bool isPro() { return (jtype == JCType::PRO); }
     hid_device *getHidDevice() { return jc; };
 
 private:
-    JCType type;
+    // joycon.cpp
+    void jcSetup();
+    void jcLoop();
+
+    // c functions in helpers.h
+    void subcomm(hid_device *joycon, u8 *in, u8 len, u8 comm, u8 get_response);
+    u8 *read_spi(hid_device *jc, u8 addr1, u8 addr2, int len);
+    void get_stick_cal(hid_device *jc);
+    void setup_joycon(hid_device *jc, u8 leds);
+
+    string hostmac;
+    JCType jtype;
     hid_device *jc = NULL;
     USHORT left_buttons = 0;
     USHORT right_buttons = 0;
     bool kill_threads = false;
     u8 data[DATA_BUFFER_SIZE];
     u16 stick_cal[14];
-    u8 global_counter = 0;
+    u8 packet_count = 0;
 };
 #endif

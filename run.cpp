@@ -25,7 +25,7 @@ int main()
     {
         if (hid_device *hidapi_handle = hid_open_path(right_joycon_devices->path))
         {
-            right_joycons.push_back(JoyCon(hidapi_handle, JCType::RIGHT));
+            right_joycons.push_back(JoyCon(hidapi_handle, JCType::RIGHT, mac_addr));
             ++i;
         }
     }
@@ -36,7 +36,7 @@ int main()
     for (; left_joycon_devices; left_joycon_devices = left_joycon_devices->next)
     {
         hid_device *hidapi_handle = hid_open_path(left_joycon_devices->path);
-        left_joycons.push_back(JoyCon(hidapi_handle, JCType::LEFT));
+        left_joycons.push_back(JoyCon(hidapi_handle, JCType::LEFT, mac_addr));
         ++i;
     }
     if (i > 0)
@@ -46,12 +46,19 @@ int main()
     for (; pro_controller_devices; pro_controller_devices = pro_controller_devices->next)
     {
         hid_device *hidapi_handle = hid_open_path(pro_controller_devices->path);
-        pro_cons.push_back(JoyCon(hidapi_handle, JCType::PRO));
+        pro_cons.push_back(JoyCon(hidapi_handle, JCType::PRO, mac_addr));
         ++i;
     }
     if (i > 0)
         std::cout << "found " << i << " Pro Controller" << std::endl;
-    
+    for (JoyCon jc : right_joycons)
+        jc.Begin();
+    for (JoyCon jc : left_joycons)
+        jc.Begin();
+    for (JoyCon jc : pro_cons)
+        jc.Begin();
+
+    int ch = std::cin.get();
     for (JoyCon jc : right_joycons)
     {
         hid_close(jc.getHidDevice());
