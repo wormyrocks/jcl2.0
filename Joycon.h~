@@ -44,8 +44,8 @@ private:
     string hostmac;
     JCType jtype;
     hid_device *jc = NULL;
-    unsigned short left_buttons = 0;
-    unsigned short right_buttons = 0;
+    USHORT left_buttons = 0;
+    USHORT right_buttons = 0;
     bool kill_threads = false;
     u8 data[DATA_BUFFER_SIZE];
     u16 stick_cal[14];

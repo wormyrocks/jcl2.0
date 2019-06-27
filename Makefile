@@ -13,7 +13,7 @@ ifeq ($(OS),Linux)
 endif
 ifeq ($(OS),Darwin)
 LDIRS=
-LIBS=-framework IOKit
+LIBS=-framework IOKit -framework CoreFoundation
 EXTENSION=
 EXTRA_CFLAGS=
 PLATFORM=mac

@@ -1,3 +1,4 @@
+#ifdef _WIN32
 #pragma once
 #include <stdio.h>
 #include "Windows.h"
@@ -56,3 +57,4 @@ char* getMAC() {
 	free(AdapterInfo);
 	return mac_addr; // caller must free.
 }
+#endif

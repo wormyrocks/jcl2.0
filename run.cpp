@@ -16,8 +16,9 @@ vector<JoyCon> pro_cons;
 
 int main()
 {
-    char *mac_addr = getMAC();
-    std::cout << "MAC address: " << mac_addr << std::endl;
+/*    char *mac_addr = getMAC();
+    std::cout << "MAC address: " << mac_addr << std::endl;*/
+	char *mac_addr = "";
     hid_init();
     struct hid_device_info *right_joycon_devices = hid_enumerate(NINTENDO_ID, JOYCON_R_ID);
     int i = 0;
