@@ -30,16 +30,24 @@ public:
     bool isPro() { return (jtype == JCType::PRO); }
     hid_device *getHidDevice() { return jc; };
 
+    // only private because of thread callback
+    void jcLoop();
+
 private:
     // joycon.cpp
     void jcSetup();
-    void jcLoop();
+    void jcSendEmpty();
 
     // c functions in helpers.h
-    void subcomm(hid_device *joycon, u8 *in, u8 len, u8 comm, u8 get_response);
+    void subcomm(hid_device *joycon, u8 *in, u8 len, u8 subcomm, u8 get_response);
+    void comm(hid_device *joycon, u8 *in, u8 len, u8 subcomm, u8 get_response, u8 command);
     u8 *read_spi(hid_device *jc, u8 addr1, u8 addr2, int len);
     void get_stick_cal(hid_device *jc);
     void setup_joycon(hid_device *jc, u8 leds);
+
+    // thread stuff
+    thread jcloop;
+    volatile bool do_kill = false;
 
     string hostmac;
     JCType jtype;

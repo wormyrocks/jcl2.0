@@ -1,9 +1,22 @@
 #pragma once
 
-void JoyCon::subcomm(hid_device *joycon, u8 *in, u8 len, u8 comm, u8 get_response)
+void threadAdapter(void * caller)
+{
+	JoyCon *j = static_cast<JoyCon*>(caller);
+	j->jcLoop();
+}
+void JoyCon::jcSendEmpty()
+{
+	comm(jc, NULL, 0, 0, 1, 0x10); 
+}
+void JoyCon::subcomm(hid_device *joycon, u8 *in, u8 len, u8 subcom, u8 get_response)
+{
+	comm(joycon, in, len, subcom, get_response, 0x1); 
+}
+void JoyCon::comm(hid_device *joycon, u8 *in, u8 len, u8 subcom, u8 get_response, u8 command)
 {
 	u8 buf[OUT_BUFFER_SIZE] = {0};
-	buf[0] = 0x1;
+	buf[0] = command;
 	buf[1] = packet_count;
 	buf[2] = 0x0;
 	buf[3] = 0x1;
@@ -13,7 +26,7 @@ void JoyCon::subcomm(hid_device *joycon, u8 *in, u8 len, u8 comm, u8 get_respons
 	buf[7] = 0x1;
 	buf[8] = 0x40;
 	buf[9] = 0x40;
-	buf[10] = comm;
+	buf[10] = subcom;
 	for (int i = 0; i < len; ++i)
 	{
 		buf[11 + i] = in[i];
@@ -31,17 +44,17 @@ void JoyCon::subcomm(hid_device *joycon, u8 *in, u8 len, u8 comm, u8 get_respons
 	{
 		int n = hid_read_timeout(joycon, data, DATA_BUFFER_SIZE, 50);
 
-		/*printf("response: ");
+		printf("response: ");
 		for (int i = 0; i < 35; ++i) {
 			printf("%x ", data[i]);
 		}
 		printf("\n");
 
-		if (data[14] != comm) {
+		if (data[14] != subcom) {
 			printf("subcomm return fail\n");
 		}
 		else printf("subcomm return correct\n");
-		*/
+		
 	}
 }
 

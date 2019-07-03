@@ -1,5 +1,7 @@
 #include <Joycon.h>
 #include "helpers.h"
+#include <thread>
+#include <mutex>
 
 void JoyCon::jcSetup()
 {
@@ -9,7 +11,9 @@ void JoyCon::jcSetup()
 
 void JoyCon::jcLoop()
 {
-    printf("jcLoop\n");
+    while (!do_kill){
+	    jcSendEmpty();
+    }
 }
 bool JoyCon::isConnected() { return 0; };
 
@@ -22,10 +26,14 @@ JoyCon::JoyCon(hid_device *handle_, JCType type_, char *hostmac_)
 
 void JoyCon::Cleanup()
 {
+    do_kill = true;
+    jcloop.join();
+    hid_close(getHidDevice());
 }
 
 void JoyCon::Begin()
 {
     jcSetup();
-    jcLoop();
+    thread tmp(threadAdapter,(void*)(this));
+    swap(tmp, jcloop);
 }

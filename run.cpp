@@ -52,25 +52,30 @@ int main()
     }
     if (i > 0)
         std::cout << "found " << i << " Pro Controller" << std::endl;
-    for (JoyCon jc : right_joycons)
-        jc.Begin();
-    for (JoyCon jc : left_joycons)
-        jc.Begin();
-    for (JoyCon jc : pro_cons)
-        jc.Begin();
-
+    for (int i = 0; i < right_joycons.size(); ++i)
+    {
+	right_joycons[i].Begin();
+    }
+    for (int i = 0; i < left_joycons.size(); ++i)
+    {
+	left_joycons[i].Begin();
+    }
+    for (int i = 0; i < pro_cons.size(); ++i)
+    {
+	pro_cons[i].Begin();
+    }
     int ch = std::cin.get();
-    for (JoyCon jc : right_joycons)
+    for (int i = 0; i < right_joycons.size(); ++i)
     {
-        hid_close(jc.getHidDevice());
+	right_joycons[i].Cleanup();
     }
-    for (JoyCon jc : left_joycons)
+    for (int i = 0; i < left_joycons.size(); ++i)
     {
-        hid_close(jc.getHidDevice());
+	left_joycons[i].Cleanup();
     }
-    for (JoyCon jc : pro_cons)
+    for (int i = 0; i < pro_cons.size(); ++i)
     {
-        hid_close(jc.getHidDevice());
+	pro_cons[i].Cleanup();
     }
     return 0;
 }
