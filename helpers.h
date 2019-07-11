@@ -17,11 +17,6 @@ void JoyCon::comm(hid_device *joycon, u8 *in, u8 len, u8 subcom, u8 get_response
 {
     comm(joycon, in, len, subcom, get_response, command, 0);
 }
-void JoyCon::finish()
-{    
-	u8 send_buf = 0x3f;
-	subcomm(jc, &send_buf, 1, 0x3, 1);
-}
 void JoyCon::comm(hid_device *joycon, u8 *in, u8 len, u8 subcom, u8 get_response, u8 command, u8 silent)
 {
     buf[0] = command;
@@ -120,6 +115,14 @@ void JoyCon::get_stick_cal(hid_device *jc)
     stick_cal[isLeft() ? 6 : 13] = ((out[4] << 8) & 0xF00 | out[3]); // Deadzone
 }
 
+void JoyCon::finish()
+{
+    u8 send_buf = 0x3f;
+    subcomm(jc, &send_buf, 1, 0x3, 1);
+    // turn off LEDs
+    send_buf = 0;
+    subcomm(jc, &send_buf, 1, 0x30, 1);
+}
 void JoyCon::setup_joycon(hid_device *jc, u8 leds)
 {
     u8 send_buf = 0x21;

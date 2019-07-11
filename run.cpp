@@ -99,6 +99,7 @@ int main()
 #else
     signal(SIGINT, closeEvent);
 #endif
+    printf("Waiting for connections.\n");
     hid_init();
     /*    *macAddr = getMAC();
     std::cout << "MAC address: " << macAddr << std::endl;*/

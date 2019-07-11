@@ -23,7 +23,7 @@ void JoyCon::jcLoop()
         }
         killmtx->unlock();
     }
-
+    finish();
     hid_close(getHidDevice());
     printf("jcLoop killed\n");
 }
