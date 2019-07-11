@@ -1,21 +1,29 @@
 #pragma once
 
-void threadAdapter(void * caller)
+void threadAdapter(JoyCon *caller)
 {
-    JoyCon *j = static_cast<JoyCon*>(caller);
-    j->jcLoop();
+    caller->jcLoop();
+    printf("threadAdapter done\n");
 }
 void JoyCon::jcSendEmpty()
 {
-    comm(jc, NULL, 0, 0, 1, 0x10); 
+    comm(jc, NULL, 0, 0, 1, 0x10, 1);
 }
 void JoyCon::subcomm(hid_device *joycon, u8 *in, u8 len, u8 subcom, u8 get_response)
 {
-    comm(joycon, in, len, subcom, get_response, 0x1); 
+    comm(joycon, in, len, subcom, get_response, 0x1);
 }
 void JoyCon::comm(hid_device *joycon, u8 *in, u8 len, u8 subcom, u8 get_response, u8 command)
 {
-    u8 buf[OUT_BUFFER_SIZE] = {0};
+    comm(joycon, in, len, subcom, get_response, command, 0);
+}
+void JoyCon::finish()
+{    
+	u8 send_buf = 0x3f;
+	subcomm(jc, &send_buf, 1, 0x3, 1);
+}
+void JoyCon::comm(hid_device *joycon, u8 *in, u8 len, u8 subcom, u8 get_response, u8 command, u8 silent)
+{
     buf[0] = command;
     buf[1] = packet_count;
     buf[2] = 0x0;
@@ -27,35 +35,47 @@ void JoyCon::comm(hid_device *joycon, u8 *in, u8 len, u8 subcom, u8 get_response
     buf[8] = 0x40;
     buf[9] = 0x40;
     buf[10] = subcom;
-    for (int i = 0; i < len; ++i)
+    if (len)
     {
-        buf[11 + i] = in[i];
+        for (int i = 0; i < len; ++i)
+        {
+            buf[11 + i] = in[i];
+        }
     }
-    if (packet_count == 0xf)
-        packet_count = 0;
-    else
-        ++packet_count;
-    //for (int i = 0; i < 15; ++i) {
-    //  printf("%x ", buf[i]);
-    //}
-    //printf("\n");
-    hid_write(joycon, buf, OUT_BUFFER_SIZE);
-    if (get_response)
+    int attempts = 0;
+    for (; attempts < SUBCOMM_ATTEMPTS_NUMBER; ++attempts)
     {
-        int n = hid_read_timeout(joycon, data, DATA_BUFFER_SIZE, 50);
-
-        printf("response: ");
-        for (int i = 0; i < 35; ++i) {
-            printf("%x ", data[i]);
+        hid_write(joycon, buf, 11 + len);
+        if (packet_count == 0xf)
+            packet_count = 0;
+        else
+            ++packet_count;
+        if (!get_response)
+            break;
+        int n = hid_read_timeout(joycon, data, DATA_BUFFER_SIZE, 200);
+        if (!silent)
+        {
+            printf("response: ");
+            for (int i = 0; i < n; ++i)
+            {
+                printf("%02x ", data[i]);
+            }
+            printf("\n");
         }
-        printf("\n");
 
-        if (data[14] != subcom) {
-            printf("subcomm return fail\n");
+        if (data[14] == subcom)
+        {
+            if (!silent)
+                printf("subcomm return correct (attempt %d)\n", attempts);
+            break;
         }
-        else printf("subcomm return correct\n");
-        
+        else
+        {
+            if (!silent)
+                printf("subcomm return fail (attempt %d)\n", attempts);
+        }
     }
+    assert(attempts != SUBCOMM_ATTEMPTS_NUMBER);
 }
 
 u8 *JoyCon::read_spi(hid_device *jc, u8 addr1, u8 addr2, int len)
@@ -102,7 +122,9 @@ void JoyCon::get_stick_cal(hid_device *jc)
 
 void JoyCon::setup_joycon(hid_device *jc, u8 leds)
 {
-    u8 send_buf = 0x3f;
+    u8 send_buf = 0x21;
+    subcomm(jc, &send_buf, 1, 0x3, 1);
+    send_buf = 0x3f;
     subcomm(jc, &send_buf, 1, 0x3, 1);
     get_stick_cal(jc);
     /*  TODO: improve bluetooth pairing

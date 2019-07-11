@@ -13,12 +13,13 @@
 #define DATA_BUFFER_SIZE 49
 #define OUT_BUFFER_SIZE 49
 
+#define SUBCOMM_ATTEMPTS_NUMBER 5
+
 class JoyCon
 {
 public:
     //commands
-    JoyCon(hid_device *handle, JCType jtype, char *hostmac);
-    void Begin();
+    JoyCon(hid_device *handle, JCType jtype, int number, char *hostmac);
     void Cleanup();
 
     //getters and setters
@@ -39,15 +40,18 @@ private:
     void jcSendEmpty();
 
     // c functions in helpers.h
+    void finish();
     void subcomm(hid_device *joycon, u8 *in, u8 len, u8 subcomm, u8 get_response);
     void comm(hid_device *joycon, u8 *in, u8 len, u8 subcomm, u8 get_response, u8 command);
+    void comm(hid_device *joycon, u8 *in, u8 len, u8 subcomm, u8 get_response, u8 command, u8 silent);
     u8 *read_spi(hid_device *jc, u8 addr1, u8 addr2, int len);
     void get_stick_cal(hid_device *jc);
     void setup_joycon(hid_device *jc, u8 leds);
 
     // thread stuff
     thread jcloop;
-    volatile bool do_kill = false;
+    volatile bool do_kill;
+    mutex *killmtx;
 
     string hostmac;
     JCType jtype;
@@ -56,7 +60,9 @@ private:
     unsigned short right_buttons = 0;
     bool kill_threads = false;
     u8 data[DATA_BUFFER_SIZE];
+    u8 buf[OUT_BUFFER_SIZE];
     u16 stick_cal[14];
     u8 packet_count = 0;
+    int jc_num = 0;
 };
 #endif

@@ -3,9 +3,10 @@
 #include "grabmac.h"
 #include <vector>
 
-vector<JoyCon> left_joycons;
-vector<JoyCon> right_joycons;
-vector<JoyCon> pro_cons;
+vector<JoyCon *> left_joycons;
+vector<JoyCon *> right_joycons;
+vector<JoyCon *> pro_cons;
+char *macAddr = "";
 
 // function naming conventions (will try to stick to them):
 //   variables: camelcase
@@ -14,68 +15,105 @@ vector<JoyCon> pro_cons;
 //   type names: upper camelcase
 //   c functions: lowercase, separated by underscores
 
-int main()
+volatile bool signal_caught = false;
+
+#ifdef _WIN32
+BOOL WINAPI closeEvent(DWORD dwType)
 {
-/*    char *mac_addr = getMAC();
-    std::cout << "MAC address: " << mac_addr << std::endl;*/
-	char *mac_addr = "";
-    hid_init();
+    return (signal_caught = true);
+};
+#else
+void closeEvent(int s)
+{
+    signal_caught = true;
+    return;
+};
+#endif
+
+void on_sigint()
+{
+    for (int i = 0; i < right_joycons.size(); ++i)
+    {
+        printf("cleaning up rcon %d\n", i);
+        right_joycons[i]->Cleanup();
+    }
+    for (int i = 0; i < left_joycons.size(); ++i)
+    {
+        printf("cleaning up lcon %d\n", i);
+        left_joycons[i]->Cleanup();
+    }
+    for (int i = 0; i < pro_cons.size(); ++i)
+    {
+        printf("cleaning up pcon %d\n", i);
+        pro_cons[i]->Cleanup();
+    }
+}
+
+void enumerateJoycons()
+{
     struct hid_device_info *right_joycon_devices = hid_enumerate(NINTENDO_ID, JOYCON_R_ID);
     int i = 0;
+    int allct = right_joycons.size() + left_joycons.size() + pro_cons.size();
     for (; right_joycon_devices; right_joycon_devices = right_joycon_devices->next)
     {
-        if (hid_device *hidapi_handle = hid_open_path(right_joycon_devices->path))
-        {
-            right_joycons.push_back(JoyCon(hidapi_handle, JCType::RIGHT, mac_addr));
-            ++i;
-        }
+        if (i < right_joycons.size())
+            continue;
+        hid_device *hidapi_handle = hid_open_path(right_joycon_devices->path);
+        hid_set_nonblocking(hidapi_handle, false);
+        std::cout << "found right Joy-Con, registering as " << allct << std::endl;
+        right_joycons.push_back(new JoyCon(hidapi_handle, JCType::RIGHT, ++allct, macAddr));
+        ++i;
     }
-    if (i > 0)
-        std::cout << "found " << i << " right Joy-Con" << std::endl;
     i = 0;
     struct hid_device_info *left_joycon_devices = hid_enumerate(NINTENDO_ID, JOYCON_L_ID);
     for (; left_joycon_devices; left_joycon_devices = left_joycon_devices->next)
     {
+        if (i < left_joycons.size())
+            continue;
         hid_device *hidapi_handle = hid_open_path(left_joycon_devices->path);
-        left_joycons.push_back(JoyCon(hidapi_handle, JCType::LEFT, mac_addr));
+        hid_set_nonblocking(hidapi_handle, false);
+        std::cout << "found left Joy-Con, registering as " << allct << std::endl;
+        left_joycons.push_back(new JoyCon(hidapi_handle, JCType::LEFT, ++allct, macAddr));
         ++i;
     }
-    if (i > 0)
-        std::cout << "found " << i << " right Joy-Con" << std::endl;
     i = 0;
     struct hid_device_info *pro_controller_devices = hid_enumerate(NINTENDO_ID, JOYCON_P_ID);
     for (; pro_controller_devices; pro_controller_devices = pro_controller_devices->next)
     {
+        if (i < pro_cons.size())
+            continue;
         hid_device *hidapi_handle = hid_open_path(pro_controller_devices->path);
-        pro_cons.push_back(JoyCon(hidapi_handle, JCType::PRO, mac_addr));
+        hid_set_nonblocking(hidapi_handle, false);
+        std::cout << "found Pro Controller, registering as " << allct << std::endl;
+        pro_cons.push_back(new JoyCon(hidapi_handle, JCType::PRO, ++allct, macAddr));
         ++i;
     }
-    if (i > 0)
-        std::cout << "found " << i << " Pro Controller" << std::endl;
-    for (int i = 0; i < right_joycons.size(); ++i)
+    hid_free_enumeration(left_joycon_devices);
+    hid_free_enumeration(right_joycon_devices);
+    hid_free_enumeration(pro_controller_devices);
+}
+int main()
+{
+#ifdef _WIN32
+    SetConsoleCtrlHandler((PHANDLER_ROUTINE)closeEvent, TRUE);
+#else
+    signal(SIGINT, closeEvent);
+#endif
+    hid_init();
+    /*    *macAddr = getMAC();
+    std::cout << "MAC address: " << macAddr << std::endl;*/
+    bool done = false;
+    while (!done)
     {
-	right_joycons[i].Begin();
-    }
-    for (int i = 0; i < left_joycons.size(); ++i)
-    {
-	left_joycons[i].Begin();
-    }
-    for (int i = 0; i < pro_cons.size(); ++i)
-    {
-	pro_cons[i].Begin();
-    }
-    int ch = std::cin.get();
-    for (int i = 0; i < right_joycons.size(); ++i)
-    {
-	right_joycons[i].Cleanup();
-    }
-    for (int i = 0; i < left_joycons.size(); ++i)
-    {
-	left_joycons[i].Cleanup();
-    }
-    for (int i = 0; i < pro_cons.size(); ++i)
-    {
-	pro_cons[i].Cleanup();
+        enumerateJoycons();
+        usleep(500000);
+        if (signal_caught)
+        {
+            signal_caught = false;
+            on_sigint();
+            printf("on_sigint finished\n");
+            done = true;
+        }
     }
     return 0;
 }

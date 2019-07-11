@@ -4,7 +4,7 @@ EXTENSION=.exe
 
 # These are important
 LDIRS=
-LIBS=-lsetupapi -lIphlpapi
+LIBS=-lpthread -lsetupapi -lIphlpapi
 EXTRA_CFLAGS=-static -static-libgcc -static-libstdc++
 PLATFORM=windows
 
@@ -39,10 +39,10 @@ $(TARGET)$(EXTENSION): $(OBJ) $(ODIR)/Joycon.o $(ODIR)/hid.o
 	$(CC) -g -o $@ $^ $(CPPFLAGS)
 
 $(ODIR)/hid.o: libs/hidapi/$(PLATFORM)/hid.c
-	gcc -c -o $@ $< $(CFLAGS)
+	gcc -c -g -o $@ $< $(CFLAGS)
 
-$(ODIR)/%.o: %.cpp %.h
-	$(CC) -c -o $@ $< $(CPPFLAGS)
+$(ODIR)/%.o: %.cpp %.h helpers.h
+	$(CC) -c -g -o $@ $< $(CPPFLAGS)
 
 .PHONY: clean
 

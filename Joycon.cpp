@@ -5,35 +5,49 @@
 
 void JoyCon::jcSetup()
 {
-    setup_joycon(jc, 0x1);
     printf("jcSetup\n");
+    setup_joycon(jc, (u8)jc_num);
 }
 
 void JoyCon::jcLoop()
 {
-    while (!do_kill){
-	    jcSendEmpty();
+    jcSetup();
+    printf("setup done, main loop start (ctrl-c to exit)\n");
+    while (true)
+    {
+        jcSendEmpty();
+        killmtx->lock();
+        if (do_kill)
+        {
+            break;
+        }
+        killmtx->unlock();
     }
+
+    hid_close(getHidDevice());
+    printf("jcLoop killed\n");
 }
 bool JoyCon::isConnected() { return 0; };
 
-JoyCon::JoyCon(hid_device *handle_, JCType type_, char *hostmac_)
+JoyCon::JoyCon(hid_device *handle_, JCType type_, int num, char *hostmac_)
 {
     jc = handle_;
     jtype = type_;
+    jc_num = num;
     hostmac = string(hostmac_);
+    do_kill = false;
+    killmtx = new mutex();
+    thread tmp(threadAdapter, this);
+    swap(tmp, jcloop);
+    assert(jcloop.joinable());
 }
 
 void JoyCon::Cleanup()
 {
+    killmtx->lock();
     do_kill = true;
+    killmtx->unlock();
+    printf("kill flag set\n");
+    assert(jcloop.joinable());
     jcloop.join();
-    hid_close(getHidDevice());
-}
-
-void JoyCon::Begin()
-{
-    jcSetup();
-    thread tmp(threadAdapter,(void*)(this));
-    swap(tmp, jcloop);
 }

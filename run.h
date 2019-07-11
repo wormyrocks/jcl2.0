@@ -11,7 +11,10 @@ using namespace std;
 #include <iostream>
 #include <thread>
 #include <csignal>
+#include <assert.h>
 #include <hidapi.h>
+#include <unistd.h>
+#include <mutex>
 
 enum JCType:int { LEFT=0, RIGHT=1, PRO=2 };
 

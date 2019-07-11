@@ -5,7 +5,7 @@
             "label": "debugbuild",
             "type": "shell",
             "windows": {
-                "command": "mingw32-make"
+                "command": "source env_setup.sh&&mingw32-make"
             },
             "osx": {
                 "command": "make"
