@@ -138,11 +138,25 @@ void JoyCon::setup_joycon(hid_device *jc, u8 leds)
     subcomm(jc, &send_buf, 1, 0x3, 1);
 }
 
+void JoyCon::toggle_rumble(bool enable_)
+{
+}
+
+void JoyCon::toggle_imu(bool enable_)
+{
+    printf("IMU toggled");
+}
+
+float JoyCon::get_battery_level()
+{
+}
+
 void JoyCon::process()
 {
     u32 buttons_ = 0;
     if (data[0] == 0x30)
     {
+        report_type = RT_30;
         memcpy(&buttons_, (void *)(data + 3), 3);
         dbuttons = buttons_ ^ buttons;
         if (dbuttons)
@@ -191,5 +205,9 @@ void JoyCon::process()
                 stick[i] = -1;
             printf("stick: %f %f\n", stick[0], stick[1]);
         }
+    }
+    else if (data[0] == 0x21)
+    {
+        report_type = RT_21;
     }
 }

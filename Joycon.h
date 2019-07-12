@@ -16,41 +16,44 @@
 
 #define SUBCOMM_ATTEMPTS_NUMBER 8
 
-    
 class JoyCon
 {
 public:
-enum JOYCON_BUTTONS {
-    L_Y,
-    L_X,
-    L_B,
-    L_A,
-    L_SR,
-    L_SL,
-    L_R,
-    L_ZR,
-    S_MINUS,
-    S_PLUS,
-    S_RSTICK,
-    S_LSTICK,
-    S_HOME,
-    S_CAPTURE,
-    S_NULL,
-    S_GRIP,
-    R_DOWN,
-    R_UP,
-    R_RIGHT,
-    R_LEFT,
-    R_SR,
-    R_SL,
-    R_L,
-    R_ZL,
-    BUTTONS_END
-};
-const string button_names[BUTTONS_END] ={
-    "Y", "X", "B", "A", "L_SR", "L_SL", "R", "ZR", "-", "+", "RS", "LS", "HOME", "CAPTURE", "PAPERCLIP", "GRIP"
-, "DOWN", "UP", "RIGHT", "LEFT", "R_SR", "R_SL", "L", "ZL"
-};
+    enum JOYCON_BUTTONS
+    {
+        L_Y,
+        L_X,
+        L_B,
+        L_A,
+        L_SR,
+        L_SL,
+        L_R,
+        L_ZR,
+        S_MINUS,
+        S_PLUS,
+        S_RSTICK,
+        S_LSTICK,
+        S_HOME,
+        S_CAPTURE,
+        S_NULL,
+        S_GRIP,
+        R_DOWN,
+        R_UP,
+        R_RIGHT,
+        R_LEFT,
+        R_SR,
+        R_SL,
+        R_L,
+        R_ZL,
+        BUTTONS_END
+    };
+    const string button_names[BUTTONS_END] = {
+        "Y", "X", "B", "A", "L_SR", "L_SL", "R", "ZR", "-", "+", "RS", "LS", "HOME", "CAPTURE", "PAPERCLIP", "GRIP", "DOWN", "UP", "RIGHT", "LEFT", "R_SR", "R_SL", "L", "ZL"};
+    enum ReportType
+    {
+        RT_21,
+        RT_30
+    };
     //commands
     JoyCon(hid_device *handle, JCType jtype, int number, char *hostmac);
     void Cleanup();
@@ -64,8 +67,14 @@ const string button_names[BUTTONS_END] ={
     bool isPro() { return (jtype == JCType::PRO); }
     hid_device *getHidDevice() { return jc; };
 
-    // only private because of thread callback
+    // only public because of thread callback
     void jcLoop();
+
+    // queue functions
+    void ToggleIMU(bool enable);
+    float GetBatteryLevel();
+    void ToggleRumble(bool enable);
+    void toggle_imu(bool enable_);
 
 private:
     // joycon.cpp
@@ -82,15 +91,23 @@ private:
     void get_stick_cal(hid_device *jc);
     void setup_joycon(hid_device *jc, u8 leds);
 
+    // queue functions
+    void toggle_rumble(bool enable_);
+    float get_battery_level();
+
+    // private queue functions (helpers.h)
+
     // thread stuff
     thread jcloop;
     volatile bool do_kill;
     mutex *killmtx;
+    mutex *cmdmtx;
 
     // internal
-    volatile u32 rbuttons=0;
-    volatile u32 dbuttons=0;
-    volatile u32 buttons=0;
+    deque<std::function<void()>> fq;
+    volatile u32 rbuttons = 0;
+    volatile u32 dbuttons = 0;
+    volatile u32 buttons = 0;
     volatile float stick[2];
     string hostmac;
     JCType jtype;
@@ -101,5 +118,9 @@ private:
     u16 stick_cal[7];
     u8 packet_count = 0;
     int jc_num = 0;
+    bool rumble_enabled = true; // TODO : get rumble status on start
+    bool imu_enabled = true;
+    float batteryLevel = 0;
+    volatile ReportType report_type;
 };
 #endif

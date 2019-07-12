@@ -116,5 +116,6 @@ int main()
             done = true;
         }
     }
+    hid_exit();
     return 0;
 }

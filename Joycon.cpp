@@ -15,7 +15,18 @@ void JoyCon::jcLoop()
     printf("setup done, main loop start (ctrl-c to exit)\n");
     while (true)
     {
-        jcSendEmpty();
+        cmdmtx->lock();
+        if (fq.empty())
+        {
+            jcSendEmpty();
+        }
+        else
+            while (!fq.empty())
+            {
+                fq.front()();
+                fq.pop_front();
+            };
+        cmdmtx->unlock();
         process();
         killmtx->lock();
         if (do_kill)
@@ -28,6 +39,7 @@ void JoyCon::jcLoop()
     hid_close(getHidDevice());
     printf("jcLoop killed\n");
 }
+
 bool JoyCon::isConnected() { return 0; };
 
 JoyCon::JoyCon(hid_device *handle_, JCType type_, int num, char *hostmac_)
@@ -38,9 +50,27 @@ JoyCon::JoyCon(hid_device *handle_, JCType type_, int num, char *hostmac_)
     hostmac = string(hostmac_);
     do_kill = false;
     killmtx = new mutex();
+    cmdmtx = new mutex();
     thread tmp(threadAdapter, this);
     swap(tmp, jcloop);
     assert(jcloop.joinable());
+}
+
+// public function
+void JoyCon::ToggleRumble(bool enable)
+{
+}
+
+// public function
+void JoyCon::ToggleIMU(bool enable)
+{
+    cmdmtx->lock();
+    fq.push_back([this, enable] { this->toggle_imu(enable); });
+    cmdmtx->unlock();
+}
+
+float JoyCon::GetBatteryLevel()
+{
 }
 
 void JoyCon::Cleanup()

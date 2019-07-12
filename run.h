@@ -14,6 +14,8 @@ using namespace std;
 #include <assert.h>
 #include <hidapi.h>
 #include <unistd.h>
+#include <deque>
+#include <functional>
 #include <mutex>
 
 enum JCType:int { LEFT=0, RIGHT=1, PRO=2 };
