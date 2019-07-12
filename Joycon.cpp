@@ -16,6 +16,7 @@ void JoyCon::jcLoop()
     while (true)
     {
         jcSendEmpty();
+        process();
         killmtx->lock();
         if (do_kill)
         {

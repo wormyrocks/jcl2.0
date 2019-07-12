@@ -4,6 +4,7 @@
 
 #define u8 uint8_t
 #define u16 uint16_t
+#define u32 uint32_t
 
 #define NINTENDO_ID 0x057e
 #define JOYCON_L_ID 0x2006
@@ -13,11 +14,43 @@
 #define DATA_BUFFER_SIZE 49
 #define OUT_BUFFER_SIZE 49
 
-#define SUBCOMM_ATTEMPTS_NUMBER 5
+#define SUBCOMM_ATTEMPTS_NUMBER 8
 
+    
 class JoyCon
 {
 public:
+enum JOYCON_BUTTONS {
+    L_Y,
+    L_X,
+    L_B,
+    L_A,
+    L_SR,
+    L_SL,
+    L_R,
+    L_ZR,
+    S_MINUS,
+    S_PLUS,
+    S_RSTICK,
+    S_LSTICK,
+    S_HOME,
+    S_CAPTURE,
+    S_NULL,
+    S_GRIP,
+    R_DOWN,
+    R_UP,
+    R_RIGHT,
+    R_LEFT,
+    R_SR,
+    R_SL,
+    R_L,
+    R_ZL,
+    BUTTONS_END
+};
+const string button_names[BUTTONS_END] ={
+    "Y", "X", "B", "A", "L_SR", "L_SL", "R", "ZR", "-", "+", "RS", "LS", "HOME", "CAPTURE", "PAPERCLIP", "GRIP"
+, "DOWN", "UP", "RIGHT", "LEFT", "R_SR", "R_SL", "L", "ZL"
+};
     //commands
     JoyCon(hid_device *handle, JCType jtype, int number, char *hostmac);
     void Cleanup();
@@ -41,6 +74,7 @@ private:
 
     // c functions in helpers.h
     void finish();
+    void process();
     void subcomm(hid_device *joycon, u8 *in, u8 len, u8 subcomm, u8 get_response);
     void comm(hid_device *joycon, u8 *in, u8 len, u8 subcomm, u8 get_response, u8 command);
     void comm(hid_device *joycon, u8 *in, u8 len, u8 subcomm, u8 get_response, u8 command, u8 silent);
@@ -53,15 +87,18 @@ private:
     volatile bool do_kill;
     mutex *killmtx;
 
+    // internal
+    volatile u32 rbuttons=0;
+    volatile u32 dbuttons=0;
+    volatile u32 buttons=0;
+    volatile float stick[2];
     string hostmac;
     JCType jtype;
     hid_device *jc = NULL;
-    unsigned short left_buttons = 0;
-    unsigned short right_buttons = 0;
     bool kill_threads = false;
     u8 data[DATA_BUFFER_SIZE];
     u8 buf[OUT_BUFFER_SIZE];
-    u16 stick_cal[14];
+    u16 stick_cal[7];
     u8 packet_count = 0;
     int jc_num = 0;
 };
