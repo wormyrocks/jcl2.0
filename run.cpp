@@ -104,10 +104,11 @@ int main()
     /*    *macAddr = getMAC();
     std::cout << "MAC address: " << macAddr << std::endl;*/
     bool done = false;
+    int i = 0;
     while (!done)
     {
         enumerateJoycons();
-        usleep(500000);
+        usleep(100000); // TODO: change to CV
         if (signal_caught)
         {
             signal_caught = false;
@@ -115,6 +116,14 @@ int main()
             printf("on_sigint finished\n");
             done = true;
         }
+        if (i == 20)
+        {
+            i = 0;
+            printf("getBatteryLevel called\n");
+            float f = right_joycons[0]->GetBatteryLevelFloat();
+            printf("getBatteryLevel finished: %f\n", f);
+        }
+        ++i;
     }
     hid_exit();
     return 0;

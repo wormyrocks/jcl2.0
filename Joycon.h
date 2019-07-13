@@ -72,7 +72,8 @@ public:
 
     // queue functions
     void ToggleIMU(bool enable);
-    float GetBatteryLevel();
+    u16 GetBatteryLevel();
+    float GetBatteryLevelFloat();
     void ToggleRumble(bool enable);
     void toggle_imu(bool enable_);
 
@@ -90,17 +91,18 @@ private:
     u8 *read_spi(hid_device *jc, u8 addr1, u8 addr2, int len);
     void get_stick_cal(hid_device *jc);
     void setup_joycon(hid_device *jc, u8 leds);
+    void set_report_type(u8 val);
 
     // queue functions
     void toggle_rumble(bool enable_);
-    float get_battery_level();
+    void get_battery_level(std::condition_variable *consume);
 
     // private queue functions (helpers.h)
 
     // thread stuff
     thread jcloop;
     volatile bool do_kill;
-    mutex *killmtx;
+    mutex *datamtx;
     mutex *cmdmtx;
 
     // internal
@@ -120,7 +122,8 @@ private:
     int jc_num = 0;
     bool rumble_enabled = true; // TODO : get rumble status on start
     bool imu_enabled = true;
-    float batteryLevel = 0;
+    u16 batteryLevel = 0;
+    // TODO: add approximate battery level
     volatile ReportType report_type;
 };
 #endif

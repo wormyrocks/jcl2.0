@@ -16,6 +16,7 @@ using namespace std;
 #include <unistd.h>
 #include <deque>
 #include <functional>
+#include <condition_variable>
 #include <mutex>
 
 enum JCType:int { LEFT=0, RIGHT=1, PRO=2 };

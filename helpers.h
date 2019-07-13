@@ -111,19 +111,22 @@ void JoyCon::get_stick_cal(hid_device *jc)
     stick_cal[6] = ((out[4] << 8) & 0xF00 | out[3]); // Deadzone
 }
 
+void JoyCon::set_report_type(u8 val)
+{
+    subcomm(jc, &val, 1, 0x3, 1);
+}
+
 void JoyCon::finish()
 {
     // set back to normal report mode
-    u8 send_buf = 0x3f;
-    subcomm(jc, &send_buf, 1, 0x3, 1);
+    set_report_type(0x3f);
     // turn off LEDs
-    send_buf = 0;
+    u8 send_buf = 0;
     subcomm(jc, &send_buf, 1, 0x30, 1);
 }
 void JoyCon::setup_joycon(hid_device *jc, u8 leds)
 {
-    u8 send_buf = 0x3f;
-    subcomm(jc, &send_buf, 1, 0x3, 1);
+    set_report_type(0x3f);
     get_stick_cal(jc);
     /*  TODO: improve bluetooth pairing
     send_buf = 0x1;
@@ -132,10 +135,9 @@ void JoyCon::setup_joycon(hid_device *jc, u8 leds)
     subcomm(jc, &send_buf, 1, 0x1, 1);
     send_buf = 0x3;
     subcomm(jc, &send_buf, 1, 0x1, 1);*/
-    send_buf = leds;
+    u8 send_buf = leds;
     subcomm(jc, &send_buf, 1, 0x30, 1);
-    send_buf = 0x30;
-    subcomm(jc, &send_buf, 1, 0x3, 1);
+    set_report_type(0x30);
 }
 
 void JoyCon::toggle_rumble(bool enable_)
@@ -147,8 +149,12 @@ void JoyCon::toggle_imu(bool enable_)
     printf("IMU toggled");
 }
 
-float JoyCon::get_battery_level()
+void JoyCon::get_battery_level(std::condition_variable *consume)
 {
+    printf("get_battery_level\n");
+    subcomm(jc, NULL, 0, 0x50, 1);
+    batteryLevel = (data[16] << 8) | data[15];
+    consume->notify_all();
 }
 
 void JoyCon::process()
