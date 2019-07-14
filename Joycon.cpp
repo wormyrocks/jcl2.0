@@ -6,38 +6,35 @@
 void JoyCon::jcSetup()
 {
     printf("jcSetup\n");
-    setup_joycon(jc, (u8)jc_num);
+    setup_joycon((u8)jc_num);
 }
 
 void JoyCon::jcLoop()
 {
     jcSetup();
     printf("setup done, main loop start (ctrl-c to exit)\n");
-    bool have_command;
+    bool show_output = false;
     while (true)
     {
-        cmdmtx->lock();
-        have_command = !fq.empty();
-        cmdmtx->unlock();
-        if (!have_command)
-            jcSendEmpty();
-        else
+        if (hid_read_buffer(!show_output, true) > 0)
         {
-            cmdmtx->lock();
-            while (!fq.empty())
-            {
-                fq.front()();
-                fq.pop_front();
-            };
-            cmdmtx->unlock();
+            datamtx->lock();
+            process();
+            datamtx->unlock();
         }
         datamtx->lock();
-        process();
         if (do_kill)
         {
             break;
         }
         datamtx->unlock();
+        cmdmtx->lock();
+        while (!fq.empty())
+        {
+            fq.front()();
+            fq.pop_front();
+        }
+        cmdmtx->unlock();
     }
     finish();
     hid_close(getHidDevice());

@@ -85,12 +85,13 @@ private:
     // c functions in helpers.h
     void finish();
     void process();
-    void subcomm(hid_device *joycon, u8 *in, u8 len, u8 subcomm, u8 get_response);
-    void comm(hid_device *joycon, u8 *in, u8 len, u8 subcomm, u8 get_response, u8 command);
-    void comm(hid_device *joycon, u8 *in, u8 len, u8 subcomm, u8 get_response, u8 command, u8 silent);
-    u8 *read_spi(hid_device *jc, u8 addr1, u8 addr2, int len);
-    void get_stick_cal(hid_device *jc);
-    void setup_joycon(hid_device *jc, u8 leds);
+    void subcomm(u8 *in, u8 len, u8 subcomm, u8 get_response);
+    void comm(u8 *in, u8 len, u8 subcomm, u8 get_response, u8 command);
+    void comm(u8 *in, u8 len, u8 subcomm, u8 get_response, u8 command, u8 silent);
+    int hid_read_buffer(bool silent, bool block);
+    u8 *read_spi(u8 addr1, u8 addr2, int len);
+    void get_stick_cal();
+    void setup_joycon(u8 leds);
     void set_report_type(u8 val);
 
     // queue functions

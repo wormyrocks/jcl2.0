@@ -7,17 +7,17 @@ void threadAdapter(JoyCon *caller)
 }
 void JoyCon::jcSendEmpty()
 {
-    comm(jc, NULL, 0, 0, 0, 0x10, 1);
+    comm(NULL, 0, 0, 0, 0x10, 1);
 }
-void JoyCon::subcomm(hid_device *joycon, u8 *in, u8 len, u8 subcom, u8 get_response)
+void JoyCon::subcomm(u8 *in, u8 len, u8 subcom, u8 get_response)
 {
-    comm(joycon, in, len, subcom, get_response, 0x1);
+    comm(in, len, subcom, get_response, 0x1);
 }
-void JoyCon::comm(hid_device *joycon, u8 *in, u8 len, u8 subcom, u8 get_response, u8 command)
+void JoyCon::comm(u8 *in, u8 len, u8 subcom, u8 get_response, u8 command)
 {
-    comm(joycon, in, len, subcom, get_response, command, 0);
+    comm(in, len, subcom, get_response, command, 0);
 }
-void JoyCon::comm(hid_device *joycon, u8 *in, u8 len, u8 subcom, u8 get_response, u8 command, u8 silent)
+void JoyCon::comm(u8 *in, u8 len, u8 subcom, u8 get_response, u8 command, u8 silent)
 {
     // bzero(buf, len);
     buf[0] = command;
@@ -39,25 +39,16 @@ void JoyCon::comm(hid_device *joycon, u8 *in, u8 len, u8 subcom, u8 get_response
         }
     }
     int attempts = 0;
-    hid_write(joycon, buf, 11 + len);
+    hid_write(jc, buf, 11 + len);
     if (packet_count == 0xf)
         packet_count = 0;
     else
         ++packet_count;
+    if (!get_response)
+        return;
     for (; attempts < SUBCOMM_ATTEMPTS_NUMBER; ++attempts)
     {
-        int n = hid_read_timeout(joycon, data, DATA_BUFFER_SIZE, 200);
-        if (!get_response)
-            break;
-        if (!silent)
-        {
-            printf("response: ");
-            for (int i = 0; i < n; ++i)
-            {
-                printf("%02x ", data[i]);
-            }
-            printf("\n");
-        }
+        hid_read_buffer(silent, true);
         if (data[0] != 0x21)
             continue;
         if (!(data[13] >> 7))
@@ -69,22 +60,42 @@ void JoyCon::comm(hid_device *joycon, u8 *in, u8 len, u8 subcom, u8 get_response
     }
 }
 
-u8 *JoyCon::read_spi(hid_device *jc, u8 addr1, u8 addr2, int len)
+int JoyCon::hid_read_buffer(bool silent, bool block)
+{
+    int n;
+    if (block)
+        n = hid_read_timeout(jc, data, DATA_BUFFER_SIZE, 200);
+    else
+        n = hid_read(jc, data, DATA_BUFFER_SIZE);
+
+    if (n > 0 && !silent)
+    {
+        printf("response: ");
+        for (int i = 0; i < n; ++i)
+        {
+            printf("%02x ", data[i]);
+        }
+        printf("\n");
+    }
+    return n;
+}
+
+u8 *JoyCon::read_spi(u8 addr1, u8 addr2, int len)
 {
     u8 buf[] = {addr2, addr1, 0x00, 0x00, (u8)len};
     int tries = 0;
     do
     {
         ++tries;
-        subcomm(jc, buf, 5, 0x10, 1);
+        subcomm(buf, 5, 0x10, 1);
     } while (tries < 10 && !(data[15] == addr2 && data[16] == addr1));
     return data + 20;
 }
 
-void JoyCon::get_stick_cal(hid_device *jc)
+void JoyCon::get_stick_cal()
 {
     // dump calibration data
-    u8 *out = read_spi(jc, 0x80, isLeft() ? 0x12 : 0x1d, 9);
+    u8 *out = read_spi(0x80, isLeft() ? 0x12 : 0x1d, 9);
     u8 found = 0;
     for (int i = 0; i < 9; ++i)
     {
@@ -99,7 +110,7 @@ void JoyCon::get_stick_cal(hid_device *jc)
     if (!found)
     {
         std::cout << "User cal not found" << std::endl;
-        out = read_spi(jc, 0x60, isLeft() ? 0x3d : 0x46, 9);
+        out = read_spi(0x60, isLeft() ? 0x3d : 0x46, 9);
     }
     stick_cal[isLeft() ? 4 : 0] = ((out[7] << 8) & 0xf00) | out[6]; // X Min below center
     stick_cal[isLeft() ? 5 : 1] = ((out[8] << 4) | (out[7] >> 4));  // Y Min below center
@@ -107,13 +118,13 @@ void JoyCon::get_stick_cal(hid_device *jc)
     stick_cal[isLeft() ? 1 : 3] = ((out[2] << 4) | (out[1] >> 4));  // Y Max above center
     stick_cal[isLeft() ? 2 : 4] = ((out[4] << 8) & 0xf00 | out[3]); // X Center
     stick_cal[isLeft() ? 3 : 5] = ((out[5] << 4) | (out[4] >> 4));  // Y Center
-    out = read_spi(jc, 0x60, isLeft() ? 0x86 : 0x98, 9);
+    out = read_spi(0x60, isLeft() ? 0x86 : 0x98, 9);
     stick_cal[6] = ((out[4] << 8) & 0xF00 | out[3]); // Deadzone
 }
 
 void JoyCon::set_report_type(u8 val)
 {
-    subcomm(jc, &val, 1, 0x3, 1);
+    subcomm(&val, 1, 0x3, 1);
 }
 
 void JoyCon::finish()
@@ -122,21 +133,21 @@ void JoyCon::finish()
     set_report_type(0x3f);
     // turn off LEDs
     u8 send_buf = 0;
-    subcomm(jc, &send_buf, 1, 0x30, 1);
+    subcomm(&send_buf, 1, 0x30, 1);
 }
-void JoyCon::setup_joycon(hid_device *jc, u8 leds)
+void JoyCon::setup_joycon(u8 leds)
 {
     set_report_type(0x3f);
-    get_stick_cal(jc);
+    get_stick_cal();
     /*  TODO: improve bluetooth pairing
     send_buf = 0x1;
-    subcomm(jc, &send_buf, 1, 0x1, 1);
+    subcomm(&send_buf, 1, 0x1, 1);
     send_buf = 0x2;
-    subcomm(jc, &send_buf, 1, 0x1, 1);
+    subcomm(&send_buf, 1, 0x1, 1);
     send_buf = 0x3;
-    subcomm(jc, &send_buf, 1, 0x1, 1);*/
+    subcomm(&send_buf, 1, 0x1, 1);*/
     u8 send_buf = leds;
-    subcomm(jc, &send_buf, 1, 0x30, 1);
+    subcomm(&send_buf, 1, 0x30, 1);
     set_report_type(0x30);
 }
 
@@ -152,7 +163,7 @@ void JoyCon::toggle_imu(bool enable_)
 void JoyCon::get_battery_level(std::condition_variable *consume)
 {
     printf("get_battery_level\n");
-    subcomm(jc, NULL, 0, 0x50, 1);
+    subcomm(NULL, 0, 0x50, 1);
     batteryLevel = (data[16] << 8) | data[15];
     consume->notify_all();
 }
