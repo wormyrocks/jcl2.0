@@ -17,7 +17,7 @@ void JoyCon::comm(u8 *in, u8 len, u8 subcom, u8 get_response, u8 command)
 {
     comm(in, len, subcom, get_response, command, 0);
 }
-void JoyCon::comm(u8 *in, u8 len, u8 subcom, u8 get_response, u8 command, u8 silent)
+bool JoyCon::comm(u8 *in, u8 len, u8 subcom, u8 get_response, u8 command, u8 silent)
 {
     // bzero(buf, len);
     buf[0] = command;
@@ -38,14 +38,14 @@ void JoyCon::comm(u8 *in, u8 len, u8 subcom, u8 get_response, u8 command, u8 sil
             buf[11 + i] = in[i];
         }
     }
-    int attempts = 0;
     hid_write(jc, buf, 11 + len);
     if (packet_count == 0xf)
         packet_count = 0;
     else
         ++packet_count;
     if (!get_response)
-        return;
+        return true;
+    int attempts = 0;
     for (; attempts < SUBCOMM_ATTEMPTS_NUMBER; ++attempts)
     {
         hid_read_buffer(silent, true);
@@ -58,6 +58,7 @@ void JoyCon::comm(u8 *in, u8 len, u8 subcom, u8 get_response, u8 command, u8 sil
         printf("subcomm return correct (attempt %d)\n", attempts);
         break;
     }
+    return !(attempts == SUBCOMM_ATTEMPTS_NUMBER);
 }
 
 int JoyCon::hid_read_buffer(bool silent, bool block)
@@ -134,6 +135,9 @@ void JoyCon::finish()
     // turn off LEDs
     u8 send_buf = 0;
     subcomm(&send_buf, 1, 0x30, 1);
+    // turn off IMU
+    toggle_parameter(TP_IMU, false);
+    toggle_parameter(TP_RUMBLE, false);
 }
 void JoyCon::setup_joycon(u8 leds)
 {
@@ -150,14 +154,23 @@ void JoyCon::setup_joycon(u8 leds)
     subcomm(&send_buf, 1, 0x30, 1);
     set_report_type(0x30);
 }
-
-void JoyCon::toggle_rumble(bool enable_)
+void JoyCon::toggle_parameter(ToggleParam tp, bool enable_, std::condition_variable *consume)
 {
+    u8 sendbuf = enable_;
+    subcomm(&sendbuf, 1, (u8)tp, 1);
+    if (consume != NULL)
+        consume->notify_all();
 }
-
-void JoyCon::toggle_imu(bool enable_)
+void JoyCon::set_imu_sensitivity(GyroScale gs, AccelScale as, GyroRate gr, AccelFilter af, std::condition_variable *consume)
 {
-    printf("IMU toggled");
+    u8 sendbuf[4];
+    sendbuf[0] = (u8)gs;
+    sendbuf[1] = (u8)as;
+    sendbuf[2] = (u8)gr;
+    sendbuf[3] = (u8)af;
+    subcomm(sendbuf, 4, 0x41, 1);
+    if (consume != NULL)
+        consume->notify_all();
 }
 
 void JoyCon::get_battery_level(std::condition_variable *consume)
@@ -165,13 +178,14 @@ void JoyCon::get_battery_level(std::condition_variable *consume)
     printf("get_battery_level\n");
     subcomm(NULL, 0, 0x50, 1);
     batteryLevel = (data[16] << 8) | data[15];
-    consume->notify_all();
+    if (consume != NULL)
+        consume->notify_all();
 }
 
 void JoyCon::process()
 {
     u32 buttons_ = 0;
-    if (data[0] == 0x30)
+    if (data[0] == report_type_names[RT_30])
     {
         report_type = RT_30;
         memcpy(&buttons_, (void *)(data + 3), 3);
@@ -223,7 +237,7 @@ void JoyCon::process()
             printf("stick: %f %f\n", stick[0], stick[1]);
         }
     }
-    else if (data[0] == 0x21)
+    else if (data[0] == report_type_names[RT_21])
     {
         report_type = RT_21;
     }

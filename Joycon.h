@@ -47,13 +47,48 @@ public:
         R_ZL,
         BUTTONS_END
     };
+    enum GyroScale
+    {
+        GS_250DPS,
+        GS_500DPS,
+        GS_1000DPS,
+        GS_2000DPS
+    };
+    enum AccelScale
+    {
+        AS_8G,
+        AS_4G,
+        AS_2G,
+        AS_16G
+    };
+    enum GyroRate
+    {
+        GR_833HZ,
+        GR_208HZ
+    };
+    enum AccelFilter
+    {
+        AF_200HZ,
+        AF_100HZ
+    };
     const string button_names[BUTTONS_END] = {
         "Y", "X", "B", "A", "L_SR", "L_SL", "R", "ZR", "-", "+", "RS", "LS", "HOME", "CAPTURE", "PAPERCLIP", "GRIP", "DOWN", "UP", "RIGHT", "LEFT", "R_SR", "R_SL", "L", "ZL"};
     enum ReportType
     {
+        RT_3F,
         RT_21,
-        RT_30
+        RT_30,
+        RT_31,
+        RT_END
     };
+    enum ToggleParam
+    {
+        TP_IMU = 0x40,
+        TP_RUMBLE = 0x48,
+        TP_END
+    };
+    const u8 report_type_names[RT_END] = {
+        0x3f, 0x21, 0x30, 0x31};
     //commands
     JoyCon(hid_device *handle, JCType jtype, int number, char *hostmac);
     void Cleanup();
@@ -71,11 +106,9 @@ public:
     void jcLoop();
 
     // queue functions
-    void ToggleIMU(bool enable);
+    void ToggleParameter(ToggleParam tp, bool enable);
     u16 GetBatteryLevel();
     float GetBatteryLevelFloat();
-    void ToggleRumble(bool enable);
-    void toggle_imu(bool enable_);
 
 private:
     // joycon.cpp
@@ -87,7 +120,7 @@ private:
     void process();
     void subcomm(u8 *in, u8 len, u8 subcomm, u8 get_response);
     void comm(u8 *in, u8 len, u8 subcomm, u8 get_response, u8 command);
-    void comm(u8 *in, u8 len, u8 subcomm, u8 get_response, u8 command, u8 silent);
+    bool comm(u8 *in, u8 len, u8 subcomm, u8 get_response, u8 command, u8 silent);
     int hid_read_buffer(bool silent, bool block);
     u8 *read_spi(u8 addr1, u8 addr2, int len);
     void get_stick_cal();
@@ -95,8 +128,10 @@ private:
     void set_report_type(u8 val);
 
     // queue functions
-    void toggle_rumble(bool enable_);
     void get_battery_level(std::condition_variable *consume);
+    void set_imu_sensitivity(GyroScale gs, AccelScale as, GyroRate gr, AccelFilter af, std::condition_variable *consume);
+    void toggle_parameter(ToggleParam tp, bool enable_, std::condition_variable *consume);
+    void toggle_parameter(ToggleParam tp, bool enable_) { toggle_parameter(tp, enable_, NULL); };
 
     // private queue functions (helpers.h)
 

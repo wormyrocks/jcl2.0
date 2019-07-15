@@ -120,8 +120,9 @@ int main()
         {
             i = 0;
             printf("getBatteryLevel called\n");
-            float f = right_joycons[0]->GetBatteryLevelFloat();
-            printf("getBatteryLevel finished: %f\n", f);
+            // float f = right_joycons[0]->GetBatteryLevelFloat();            
+            right_joycons[0]->ToggleParameter(JoyCon::TP_IMU, true);
+            printf("toggleIMU finished\n");
         }
         ++i;
     }

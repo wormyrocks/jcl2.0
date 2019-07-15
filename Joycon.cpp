@@ -16,19 +16,19 @@ void JoyCon::jcLoop()
     bool show_output = false;
     while (true)
     {
-        if (hid_read_buffer(!show_output, true) > 0)
+        if (hid_read_buffer(!show_output, false) > 0 || hid_read_buffer(!show_output, true) > 0)
         {
             datamtx->lock();
             process();
             datamtx->unlock();
         }
+        cmdmtx->lock();
         datamtx->lock();
         if (do_kill)
         {
             break;
         }
         datamtx->unlock();
-        cmdmtx->lock();
         while (!fq.empty())
         {
             fq.front()();
@@ -58,19 +58,18 @@ JoyCon::JoyCon(hid_device *handle_, JCType type_, int num, char *hostmac_)
 }
 
 // public function
-void JoyCon::ToggleRumble(bool enable)
+void JoyCon::ToggleParameter(ToggleParam tp, bool enable)
 {
+    assert(tp < TP_END);
+    std::mutex mtx;
+    std::unique_lock<std::mutex> lck(mtx);
+    std::condition_variable consume;
     cmdmtx->lock();
-    fq.push_back([this, enable] { this->toggle_rumble(enable); });
+    printf("Toggling param: %02x to value %d\n", tp, enable);
+    fq.push_back([this, tp, enable, &consume] { this->toggle_parameter(tp, enable, &consume); });
+    printf("Function queued\n");
     cmdmtx->unlock();
-}
-
-// public function
-void JoyCon::ToggleIMU(bool enable)
-{
-    cmdmtx->lock();
-    fq.push_back([this, enable] { this->toggle_imu(enable); });
-    cmdmtx->unlock();
+    consume.wait_for(lck, std::chrono::milliseconds(100));
 }
 
 u16 JoyCon::GetBatteryLevel()

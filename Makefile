@@ -5,7 +5,7 @@ EXTENSION=.exe
 # These are important
 LDIRS=
 LIBS=-lpthread -lsetupapi -lIphlpapi
-EXTRA_CFLAGS=-static -static-libgcc -static-libstdc++
+EXTRA_CFLAGS=-static -static-libgcc -static-libstdc++ -O4
 PLATFORM=windows
 
 endif
