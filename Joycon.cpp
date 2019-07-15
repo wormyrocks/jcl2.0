@@ -22,13 +22,13 @@ void JoyCon::jcLoop()
             process();
             datamtx->unlock();
         }
-        cmdmtx->lock();
         datamtx->lock();
         if (do_kill)
         {
             break;
         }
         datamtx->unlock();
+        cmdmtx->lock();
         while (!fq.empty())
         {
             fq.front()();
@@ -72,6 +72,18 @@ void JoyCon::ToggleParameter(ToggleParam tp, bool enable)
     consume.wait_for(lck, std::chrono::milliseconds(100));
 }
 
+void JoyCon::SetIMUSensitivity(GyroScale gs, AccelScale as, GyroRate gr, AccelFilter af)
+{
+    std::mutex mtx;
+    std::unique_lock<std::mutex> lck(mtx);
+    std::condition_variable consume;
+    cmdmtx->lock();
+    printf("cmdmtx lock acquired on main thread\n");
+    fq.push_back([this, gs, as, gr, af, &consume] { this->set_imu_sensitivity(gs, as, gr, af, &consume); });
+    printf("Function queued\n");
+    cmdmtx->unlock();
+    consume.wait_for(lck, std::chrono::milliseconds(100));
+}
 u16 JoyCon::GetBatteryLevel()
 {
     std::mutex mtx;

@@ -107,6 +107,7 @@ public:
 
     // queue functions
     void ToggleParameter(ToggleParam tp, bool enable);
+    void SetIMUSensitivity(GyroScale gs, AccelScale as, GyroRate gr, AccelFilter af);
     u16 GetBatteryLevel();
     float GetBatteryLevelFloat();
 
