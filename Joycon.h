@@ -159,7 +159,8 @@ private:
 
     // Calibration
     u16 stick_cal[8];
-    i16 gyr_neutra[3];
+    i16 accel_neutral[6];
+    i16 gyr_neutral[6];
 
     u8 packet_count = 0;
     int jc_num = 0;

@@ -97,19 +97,35 @@ u8 *JoyCon::read_spi(u32 addr, int len)
 // not done yet
 void JoyCon::get_imu_cal()
 {
-//     u8 *out = read_spi(0x8026, 25);
-//     u8 found = 0;
-//     if (out[0] == 0xb2 && out[1] == 0xa1)
-//     {
-//         // User calibration data found
-//         std::cout << "user gyro cal found" << std::endl;
-//         found = 1;
-//         // Increment pointer to start of gyro data (0x8028)
-//         out += 2;
-//     } else {
-//         out = read_spi(0x6020, 23);
-//     }
-//     gyr_neutral[0] = (i16)()
+    u8 *out = read_spi(0x8026, 26);
+    u8 found = 0;
+    if (out[0] == 0xb2 && out[1] == 0xa1)
+    {
+        // User calibration data found
+        std::cout << "user gyro cal found" << std::endl;
+        // Increment pointer to start of gyro data (0x8028)
+        out += 2;
+    }
+    else
+    {
+        std::cout << "user gyro cal not found" << std::endl;
+        out = read_spi(0x6020, 24);
+    }
+    printf("Accel neutral values: ");
+    for (int i = 0; i < 6; i++)
+    {
+        accel_neutral[i] = (i16)(*out++);
+        accel_neutral[i] |= (0xff00 & (*out++ << 8));
+        printf("%04x (%d) ", accel_neutral[i], accel_neutral[i]);
+    }
+    printf("\nGyro neutral values: ");
+    for (int i = 0; i < 6; i++)
+    {
+        gyr_neutral[i] = (i16)(*out++);
+        gyr_neutral[i] |= (0xff00 & (*out++ << 8));
+        printf("%04x (%d) ", gyr_neutral[i], gyr_neutral[i]);
+    }
+    printf("\n");
 }
 
 void JoyCon::get_stick_cal()
