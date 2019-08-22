@@ -119,10 +119,10 @@ int main()
         if (i == 20)
         {
             i = 0;
-            printf("getBatteryLevel called\n");
-            // float f = right_joycons[0]->GetBatteryLevelFloat();            
-            right_joycons[0]->ToggleParameter(JoyCon::TP_IMU, true);
-            printf("toggleIMU finished\n");
+            // printf("getBatteryLevel called\n");
+            // // float f = right_joycons[0]->GetBatteryLevelFloat();            
+            // right_joycons[0]->ToggleParameter(JoyCon::TP_IMU, true);
+            // printf("toggleIMU finished\n");
         }
         ++i;
     }

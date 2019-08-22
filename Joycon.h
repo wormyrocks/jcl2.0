@@ -5,6 +5,8 @@
 #define u8 uint8_t
 #define u16 uint16_t
 #define u32 uint32_t
+#define i16 int16_t
+#define i32 int32_t
 
 #define NINTENDO_ID 0x057e
 #define JOYCON_L_ID 0x2006
@@ -89,7 +91,7 @@ public:
     };
     const u8 report_type_names[RT_END] = {
         0x3f, 0x21, 0x30, 0x31};
-    //commands
+    //constructor
     JoyCon(hid_device *handle, JCType jtype, int number, char *hostmac);
     void Cleanup();
 
@@ -123,8 +125,9 @@ private:
     void comm(u8 *in, u8 len, u8 subcomm, u8 get_response, u8 command);
     bool comm(u8 *in, u8 len, u8 subcomm, u8 get_response, u8 command, u8 silent);
     int hid_read_buffer(bool silent, bool block);
-    u8 *read_spi(u8 addr1, u8 addr2, int len);
+    u8 *read_spi(u32 addr, int len);
     void get_stick_cal();
+    void get_imu_cal();
     void setup_joycon(u8 leds);
     void set_report_type(u8 val);
 
@@ -144,17 +147,20 @@ private:
 
     // internal
     deque<std::function<void()>> fq;
-    volatile u32 rbuttons = 0;
-    volatile u32 dbuttons = 0;
-    volatile u32 buttons = 0;
     volatile float stick[2];
     string hostmac;
     JCType jtype;
     hid_device *jc = NULL;
     bool kill_threads = false;
+    
+    // Send and receive buffers
     u8 data[DATA_BUFFER_SIZE];
     u8 buf[OUT_BUFFER_SIZE];
-    u16 stick_cal[7];
+
+    // Calibration
+    u16 stick_cal[8];
+    i16 gyr_neutra[3];
+
     u8 packet_count = 0;
     int jc_num = 0;
     bool rumble_enabled = true; // TODO : get rumble status on start
@@ -162,5 +168,10 @@ private:
     u16 batteryLevel = 0;
     // TODO: add approximate battery level
     volatile ReportType report_type;
+    
+    // Button states
+    volatile u32 rbuttons = 0;
+    volatile u32 dbuttons = 0;
+    volatile u32 buttons = 0;
 };
 #endif

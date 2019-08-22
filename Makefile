@@ -30,7 +30,7 @@ ODIR2=cl
 LDIR=$(foreach ld, $(LDIRS),-Llibs/$(ld))
 ROOT_CFLAGS=-I. $(foreach incname, $(INCLUDE),-Ilibs/$(incname)) $(LDIR)
 CFLAGS=$(ROOT_CFLAGS)
-CPPFLAGS=$(ROOT_CFLAGS) $(EXTRA_CFLAGS) $(LIBS) -std=c++11
+CPPFLAGS=$(ROOT_CFLAGS) $(EXTRA_CFLAGS) $(LIBS) -std=c++11 -g
 CLASSES=$(foreach classname, $(CLASSLIST),$(ODIR2)/$(classname).o)
 OBJS=$(TARGET).o $(CLASSES)
 OBJ=$(patsubst %,$(ODIR)/%,$(OBJS))

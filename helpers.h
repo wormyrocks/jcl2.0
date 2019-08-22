@@ -81,37 +81,54 @@ int JoyCon::hid_read_buffer(bool silent, bool block)
     return n;
 }
 
-u8 *JoyCon::read_spi(u8 addr1, u8 addr2, int len)
+u8 *JoyCon::read_spi(u32 addr, int len)
 {
-    u8 buf[] = {addr2, addr1, 0x00, 0x00, (u8)len};
+    u8 send_buf[] = {addr & 0xff, (addr >> 8) & 0xff, (addr >> 16) & 0xff, (addr >> 24) & 0xff, (u8)len};
+    printf("send_buf: %02x %02x %02x %02x\n", send_buf[0], send_buf[1], send_buf[2], send_buf[3]);
     int tries = 0;
     do
     {
         ++tries;
-        subcomm(buf, 5, 0x10, 1);
-    } while (tries < 10 && !(data[15] == addr2 && data[16] == addr1));
+        subcomm(send_buf, 5, 0x10, 1);
+    } while (tries < 10 && !(data[15] == send_buf[0] && data[16] == send_buf[1] && data[17] == send_buf[2] && data[18] == send_buf[3]));
     return data + 20;
+}
+
+// not done yet
+void JoyCon::get_imu_cal()
+{
+//     u8 *out = read_spi(0x8026, 25);
+//     u8 found = 0;
+//     if (out[0] == 0xb2 && out[1] == 0xa1)
+//     {
+//         // User calibration data found
+//         std::cout << "user gyro cal found" << std::endl;
+//         found = 1;
+//         // Increment pointer to start of gyro data (0x8028)
+//         out += 2;
+//     } else {
+//         out = read_spi(0x6020, 23);
+//     }
+//     gyr_neutral[0] = (i16)()
 }
 
 void JoyCon::get_stick_cal()
 {
     // dump calibration data
-    u8 *out = read_spi(0x80, isLeft() ? 0x12 : 0x1d, 9);
+    u8 *out = read_spi((isLeft() ? 0x8010 : 0x801b), 11);
     u8 found = 0;
-    for (int i = 0; i < 9; ++i)
+    if (out[0] == 0xb2 && out[1] == 0xa1)
     {
-        if (out[i] != 0xff)
-        {
-            // User calibration data found
-            std::cout << "user cal found" << std::endl;
-            found = 1;
-            break;
-        }
+        // User calibration data found
+        std::cout << "user cal found" << std::endl;
+        // Increment pointer to start of calibration data by 2
+        found = 1;
+        out += 2;
     }
     if (!found)
     {
         std::cout << "User cal not found" << std::endl;
-        out = read_spi(0x60, isLeft() ? 0x3d : 0x46, 9);
+        out = read_spi(isLeft() ? 0x603d : 0x6046, 9);
     }
     stick_cal[isLeft() ? 4 : 0] = ((out[7] << 8) & 0xf00) | out[6]; // X Min below center
     stick_cal[isLeft() ? 5 : 1] = ((out[8] << 4) | (out[7] >> 4));  // Y Min below center
@@ -119,8 +136,9 @@ void JoyCon::get_stick_cal()
     stick_cal[isLeft() ? 1 : 3] = ((out[2] << 4) | (out[1] >> 4));  // Y Max above center
     stick_cal[isLeft() ? 2 : 4] = ((out[4] << 8) & 0xf00 | out[3]); // X Center
     stick_cal[isLeft() ? 3 : 5] = ((out[5] << 4) | (out[4] >> 4));  // Y Center
-    out = read_spi(0x60, isLeft() ? 0x86 : 0x98, 9);
+    out = read_spi(isLeft() ? 0x6086 : 0x6098, 9);
     stick_cal[6] = ((out[4] << 8) & 0xF00 | out[3]); // Deadzone
+    stick_cal[7] = ((out[6] << 8) & 0xF00 | out[5]); // Range ratio (TODO: how to use this?)
 }
 
 void JoyCon::set_report_type(u8 val)
@@ -143,6 +161,7 @@ void JoyCon::setup_joycon(u8 leds)
 {
     set_report_type(0x3f);
     get_stick_cal();
+    get_imu_cal();
     /*  TODO: improve bluetooth pairing
     send_buf = 0x1;
     subcomm(&send_buf, 1, 0x1, 1);
