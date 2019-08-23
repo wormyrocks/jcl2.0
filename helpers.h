@@ -7,17 +7,17 @@ void threadAdapter(JoyCon *caller)
 }
 void JoyCon::jcSendEmpty()
 {
-    comm(NULL, 0, 0, 0, 0x10, 1);
+    comm(NULL, 0, SC_NOTHING, 0, 0x10, 1);
 }
-void JoyCon::subcomm(u8 *in, u8 len, u8 subcom, u8 get_response)
+void JoyCon::subcomm(u8 *in, u8 len, SubcommandType subcom, u8 get_response)
 {
     comm(in, len, subcom, get_response, 0x1);
 }
-void JoyCon::comm(u8 *in, u8 len, u8 subcom, u8 get_response, u8 command)
+void JoyCon::comm(u8 *in, u8 len, SubcommandType subcom, u8 get_response, u8 command)
 {
     comm(in, len, subcom, get_response, command, 0);
 }
-bool JoyCon::comm(u8 *in, u8 len, u8 subcom, u8 get_response, u8 command, u8 silent)
+bool JoyCon::comm(u8 *in, u8 len, SubcommandType subcom, u8 get_response, u8 command, u8 silent)
 {
     // bzero(buf, len);
     buf[0] = command;
@@ -89,7 +89,7 @@ u8 *JoyCon::read_spi(u32 addr, int len)
     do
     {
         ++tries;
-        subcomm(send_buf, 5, 0x10, 1);
+        subcomm(send_buf, 5, SC_SPI_FLASH_READ, 1);
     } while (tries < 10 && !(data[15] == send_buf[0] && data[16] == send_buf[1] && data[17] == send_buf[2] && data[18] == send_buf[3]));
     return data + 20;
 }
@@ -159,7 +159,7 @@ void JoyCon::get_stick_cal()
 
 void JoyCon::set_report_type(u8 val)
 {
-    subcomm(&val, 1, 0x3, 1);
+    subcomm(&val, 1, SC_SET_INPUT_REPORT_MODE, 1);
 }
 
 void JoyCon::finish()
@@ -168,7 +168,7 @@ void JoyCon::finish()
     set_report_type(0x3f);
     // turn off LEDs
     u8 send_buf = 0;
-    subcomm(&send_buf, 1, 0x30, 1);
+    subcomm(&send_buf, 1, SC_SET_PLAYER_LIGHTS, 1);
     // turn off IMU
     toggle_parameter(TP_IMU, false);
     toggle_parameter(TP_RUMBLE, false);
@@ -186,13 +186,13 @@ void JoyCon::setup_joycon(u8 leds)
     send_buf = 0x3;
     subcomm(&send_buf, 1, 0x1, 1);*/
     u8 send_buf = leds;
-    subcomm(&send_buf, 1, 0x30, 1);
+    subcomm(&send_buf, 1, SC_SET_PLAYER_LIGHTS, 1);
     set_report_type(0x30);
 }
 void JoyCon::toggle_parameter(ToggleParam tp, bool enable_, std::condition_variable *consume)
 {
     u8 sendbuf = enable_;
-    subcomm(&sendbuf, 1, (u8)tp, 1);
+    subcomm(&sendbuf, 1, (SubcommandType)tp, 1);
     if (consume != NULL)
         consume->notify_all();
 }
@@ -203,7 +203,7 @@ void JoyCon::set_imu_sensitivity(GyroScale gs, AccelScale as, GyroRate gr, Accel
     sendbuf[1] = (u8)as;
     sendbuf[2] = (u8)gr;
     sendbuf[3] = (u8)af;
-    subcomm(sendbuf, 4, 0x41, 1);
+    subcomm(sendbuf, 4, SC_SET_IMU_SENSITIVITY, 1);
     if (consume != NULL)
         consume->notify_all();
 }
@@ -211,8 +211,8 @@ void JoyCon::set_imu_sensitivity(GyroScale gs, AccelScale as, GyroRate gr, Accel
 void JoyCon::get_battery_level(std::condition_variable *consume)
 {
     printf("get_battery_level\n");
-    subcomm(NULL, 0, 0x50, 1);
     batteryLevel = (data[16] << 8) | data[15];
+    subcomm(NULL, 0, SC_GET_VOLTAGE, 1);
     if (consume != NULL)
         consume->notify_all();
 }
@@ -246,8 +246,8 @@ void JoyCon::process()
             }
         }
 
-        u16 raw[] = {(uint16_t)(data[isLeft() ? 6 : 9] | ((data[isLeft() ? 7 : 10] & 0xf) << 8)),
-                     (uint16_t)((data[isLeft() ? 7 : 10] >> 4) | (data[isLeft() ? 8 : 11] << 4))};
+        u16 raw[] = {(u16)(data[isLeft() ? 6 : 9] | ((data[isLeft() ? 7 : 10] & 0xf) << 8)),
+                     (u16)((data[isLeft() ? 7 : 10] >> 4) | (data[isLeft() ? 8 : 11] << 4))};
 
         for (u8 i = 0; i < 2; ++i)
         {
@@ -271,9 +271,28 @@ void JoyCon::process()
                 stick[i] = -1;
             printf("stick: %f %f\n", stick[0], stick[1]);
         }
+        process_imu();
     }
     else if (data[0] == report_type_names[RT_21])
     {
         report_type = RT_21;
+    }
+}
+
+void JoyCon::process_imu()
+{
+    // Process 3 IMU frames per packet
+    for (int n = 0; n < 3; ++n)
+    {
+        gyr_r[0] = (i16)(data[19 + n * 12] | ((data[20 + n * 12] << 8) & 0xff00));
+        gyr_r[1] = (i16)(data[21 + n * 12] | ((data[22 + n * 12] << 8) & 0xff00));
+        gyr_r[2] = (i16)(data[23 + n * 12] | ((data[24 + n * 12] << 8) & 0xff00));
+        acc_r[0] = (i16)(data[13 + n * 12] | ((data[14 + n * 12] << 8) & 0xff00));
+        acc_r[1] = (i16)(data[15 + n * 12] | ((data[16 + n * 12] << 8) & 0xff00));
+        acc_r[2] = (i16)(data[17 + n * 12] | ((data[18 + n * 12] << 8) & 0xff00));
+        // for (int i = 0; i < 3; ++i)
+        // {
+        //     acc_g[i] = acc_r[i] * 
+        // }
     }
 }

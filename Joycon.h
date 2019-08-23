@@ -21,6 +21,14 @@
 class JoyCon
 {
 public:
+    enum ReportType
+    {
+        RT_3F,
+        RT_21,
+        RT_30,
+        RT_31,
+        RT_END
+    };
     enum JOYCON_BUTTONS
     {
         L_Y,
@@ -49,19 +57,23 @@ public:
         R_ZL,
         BUTTONS_END
     };
+    const string button_names[BUTTONS_END] = {
+        "Y", "X", "B", "A", "L_SR", "L_SL", "R", "ZR", "-", "+", "RS", "LS", "HOME", "CAPTURE", "PAPERCLIP", "GRIP", "DOWN", "UP", "RIGHT", "LEFT", "R_SR", "R_SL", "L", "ZL"};
     enum GyroScale
     {
         GS_250DPS,
         GS_500DPS,
         GS_1000DPS,
-        GS_2000DPS
+        GS_2000DPS,
+        GS_END
     };
     enum AccelScale
     {
         AS_8G,
         AS_4G,
         AS_2G,
-        AS_16G
+        AS_16G,
+        AS_END
     };
     enum GyroRate
     {
@@ -73,24 +85,58 @@ public:
         AF_200HZ,
         AF_100HZ
     };
-    const string button_names[BUTTONS_END] = {
-        "Y", "X", "B", "A", "L_SR", "L_SL", "R", "ZR", "-", "+", "RS", "LS", "HOME", "CAPTURE", "PAPERCLIP", "GRIP", "DOWN", "UP", "RIGHT", "LEFT", "R_SR", "R_SL", "L", "ZL"};
-    enum ReportType
+    class IMUSettings
     {
-        RT_3F,
-        RT_21,
-        RT_30,
-        RT_31,
-        RT_END
+    private:
+        const float AccelScaleMult[AS_END] = {8192, 4096, 2048, 16384};
+        const float GyroScaleMult[GS_END] = {250, 500, 1000, 2000};
+        GyroScale gs;
+        AccelScale as;
+        GyroRate gr;
+        AccelFilter af;
+        float acc_multiplier = 0;
+        float gyro_multiplier = 0;
+
+    public:
+        IMUSettings(GyroScale gs, AccelScale as, GyroRate gr, AccelFilter af)
+        {
+            acc_multiplier = AccelScaleMult[as] * 2 / sizeof(i16) / 1000;
+            gyro_multiplier = GyroScaleMult[gs] * 2 / sizeof(i16);
+        }
+        IMUSettings()
+        {
+            IMUSettings(GS_2000DPS, AS_8G, GR_208HZ, AF_100HZ);
+        }
+        GyroScale getgs() { return gs; };
+        AccelScale getas() { return as; };
+        GyroRate getgr() { return gr; };
+        AccelFilter getaf() { return af; };
+        float getAccMultiplier() { return acc_multiplier; };
+        float gyroMultiplier() { return gyro_multiplier; };
+    };
+    enum SubcommandType
+    {
+        SC_NOTHING = 0x00,
+        SC_REQUEST_DEVICE_INFO = 0x02,
+        SC_SET_INPUT_REPORT_MODE = 0x03,
+        SC_SPI_FLASH_READ = 0x10,
+        SC_SPI_FLASH_WRITE = 0x11,
+        SC_SET_PLAYER_LIGHTS = 0x30,
+        SC_GET_PLAYER_LIGHTS = 0x31,
+        SC_SET_HOME_LIGHT = 0x38,
+        SC_TOGGLE_IMU = 0x40,
+        SC_SET_IMU_SENSITIVITY = 0x41,
+        SC_ENABLE_VIBRATION = 0x48,
+        SC_GET_VOLTAGE = 0x50,
+        SC_END
     };
     enum ToggleParam
     {
-        TP_IMU = 0x40,
-        TP_RUMBLE = 0x48,
+        TP_IMU = SC_TOGGLE_IMU,
+        TP_RUMBLE = SC_ENABLE_VIBRATION,
         TP_END
     };
-    const u8 report_type_names[RT_END] = {
-        0x3f, 0x21, 0x30, 0x31};
+    const u8 report_type_names[RT_END] = {0x3f, 0x21, 0x30, 0x31};
     //constructor
     JoyCon(hid_device *handle, JCType jtype, int number, char *hostmac);
     void Cleanup();
@@ -110,6 +156,10 @@ public:
     // queue functions
     void ToggleParameter(ToggleParam tp, bool enable);
     void SetIMUSensitivity(GyroScale gs, AccelScale as, GyroRate gr, AccelFilter af);
+    void SetIMUSensitivity(IMUSettings settings)
+    {
+        SetIMUSensitivity(settings.getgs(), settings.getas(), settings.getgr(), settings.getaf());
+    };
     u16 GetBatteryLevel();
     float GetBatteryLevelFloat();
 
@@ -121,9 +171,10 @@ private:
     // c functions in helpers.h
     void finish();
     void process();
-    void subcomm(u8 *in, u8 len, u8 subcomm, u8 get_response);
-    void comm(u8 *in, u8 len, u8 subcomm, u8 get_response, u8 command);
-    bool comm(u8 *in, u8 len, u8 subcomm, u8 get_response, u8 command, u8 silent);
+    void process_imu();
+    void subcomm(u8 *in, u8 len, SubcommandType subcomm, u8 get_response);
+    void comm(u8 *in, u8 len, SubcommandType subcomm, u8 get_response, u8 command);
+    bool comm(u8 *in, u8 len, SubcommandType subcomm, u8 get_response, u8 command, u8 silent);
     int hid_read_buffer(bool silent, bool block);
     u8 *read_spi(u32 addr, int len);
     void get_stick_cal();
@@ -152,7 +203,7 @@ private:
     JCType jtype;
     hid_device *jc = NULL;
     bool kill_threads = false;
-    
+
     // Send and receive buffers
     u8 data[DATA_BUFFER_SIZE];
     u8 buf[OUT_BUFFER_SIZE];
@@ -162,14 +213,21 @@ private:
     i16 accel_neutral[6];
     i16 gyr_neutral[6];
 
+    // Raw IMU data
+    i16 gyr_r[3];
+    i16 acc_r[3];
+
     u8 packet_count = 0;
+    u8 timestamp = 0;
     int jc_num = 0;
     bool rumble_enabled = true; // TODO : get rumble status on start
     bool imu_enabled = true;
     u16 batteryLevel = 0;
     // TODO: add approximate battery level
+
+    // State variables
     volatile ReportType report_type;
-    
+    IMUSettings myIMUSettings;
     // Button states
     volatile u32 rbuttons = 0;
     volatile u32 dbuttons = 0;
