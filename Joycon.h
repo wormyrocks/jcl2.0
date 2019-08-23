@@ -85,35 +85,39 @@ public:
         AF_200HZ,
         AF_100HZ
     };
-    class IMUSettings
-    {
-    private:
-        const float AccelScaleMult[AS_END] = {8192, 4096, 2048, 16384};
-        const float GyroScaleMult[GS_END] = {250, 500, 1000, 2000};
-        GyroScale gs;
-        AccelScale as;
-        GyroRate gr;
-        AccelFilter af;
-        float acc_multiplier = 0;
-        float gyro_multiplier = 0;
 
-    public:
-        IMUSettings(GyroScale gs, AccelScale as, GyroRate gr, AccelFilter af)
-        {
-            acc_multiplier = AccelScaleMult[as] * 2 / sizeof(i16) / 1000;
-            gyro_multiplier = GyroScaleMult[gs] * 2 / sizeof(i16);
-        }
-        IMUSettings()
-        {
-            IMUSettings(GS_2000DPS, AS_8G, GR_208HZ, AF_100HZ);
-        }
-        GyroScale getgs() { return gs; };
-        AccelScale getas() { return as; };
-        GyroRate getgr() { return gr; };
-        AccelFilter getaf() { return af; };
-        float getAccMultiplier() { return acc_multiplier; };
-        float gyroMultiplier() { return gyro_multiplier; };
-    };
+    // class IMUSettings
+    // {
+    // private:
+    //     GyroScale gs;
+    //     AccelScale as;
+    //     GyroRate gr;
+    //     AccelFilter af;
+    //     float gyro_multiplier, acc_multiplier;
+    //     float AccMultiplier[3] = {0, 0, 0};
+    //     void Setup(GyroScale gs, AccelScale as, GyroRate gr, AccelFilter af)
+    //     {
+    //         acc_multiplier = AccelScaleMult[(int)as];
+    //         gyro_multiplier = GyroScaleMult[(int)gs] * 1.15;
+    //     }
+
+    // public:
+    //     IMUSettings(GyroScale gs, AccelScale as, GyroRate gr, AccelFilter af)
+    //     {
+    //         Setup(gs, as, gr, af);
+    //     }
+    //     IMUSettings()
+    //     {
+    //         Setup(GS_2000DPS, AS_8G, GR_208HZ, AF_100HZ);
+    //     }
+    //     GyroScale getgs() { return gs; };
+    //     AccelScale getas() { return as; };
+    //     GyroRate getgr() { return gr; };
+    //     AccelFilter getaf() { return af; };
+    //     float getAccMultiplier() { return acc_multiplier; };
+    //     float getGyroMultiplier() { return gyro_multiplier; };
+    //     i16 *getAccOrigin() { return AccelOrigin; };
+    // };
     enum SubcommandType
     {
         SC_NOTHING = 0x00,
@@ -156,12 +160,10 @@ public:
     // queue functions
     void ToggleParameter(ToggleParam tp, bool enable);
     void SetIMUSensitivity(GyroScale gs, AccelScale as, GyroRate gr, AccelFilter af);
-    void SetIMUSensitivity(IMUSettings settings)
-    {
-        SetIMUSensitivity(settings.getgs(), settings.getas(), settings.getgr(), settings.getaf());
-    };
     u16 GetBatteryLevel();
     float GetBatteryLevelFloat();
+    float *GetRawAccel() { return acc_g; };
+    float *GetRawGyro() { return gyr_dps; };
 
 private:
     // joycon.cpp
@@ -210,12 +212,25 @@ private:
 
     // Calibration
     u16 stick_cal[8];
-    i16 accel_neutral[6];
-    i16 gyr_neutral[6];
 
-    // Raw IMU data
-    i16 gyr_r[3];
-    i16 acc_r[3];
+    // Constant values describing accel multipliers
+    const float AccelScaleMult[4] = {8000, 4000, 2000, 16000};
+    const float GyroScaleMult[4] = {250, 500, 1000, 2000};
+
+    // Accel zero / neutral / sensitivity values from SPI
+    i16 accel_cal[6];
+    i16 gyr_cal[6];
+
+    // Accelerometer horizontal offsets
+    i16 accel_offset[3];
+
+    // Accelerometer multiplier (calculated from previous values)
+    float accel_multiplier[3];
+    float gyro_multiplier[3];
+
+    // IMU data
+    float acc_g[3];
+    float gyr_dps[3];
 
     u8 packet_count = 0;
     u8 timestamp = 0;
@@ -227,7 +242,6 @@ private:
 
     // State variables
     volatile ReportType report_type;
-    IMUSettings myIMUSettings;
     // Button states
     volatile u32 rbuttons = 0;
     volatile u32 dbuttons = 0;

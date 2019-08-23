@@ -111,21 +111,35 @@ void JoyCon::get_imu_cal()
         std::cout << "user gyro cal not found" << std::endl;
         out = read_spi(0x6020, 24);
     }
-    printf("Accel neutral values: ");
+    printf("Accel calibration values: ");
     for (int i = 0; i < 6; i++)
     {
-        accel_neutral[i] = (i16)(*out++);
-        accel_neutral[i] |= (0xff00 & (*out++ << 8));
-        printf("%04x (%d) ", accel_neutral[i], accel_neutral[i]);
+        accel_cal[i] = (i16)(*out++);
+        accel_cal[i] |= (0xff00 & (*out++ << 8));
+        printf("%04x (%d) ", accel_cal[i], accel_cal[i]);
     }
-    printf("\nGyro neutral values: ");
+    printf("\nGyro calibration values: ");
     for (int i = 0; i < 6; i++)
     {
-        gyr_neutral[i] = (i16)(*out++);
-        gyr_neutral[i] |= (0xff00 & (*out++ << 8));
-        printf("%04x (%d) ", gyr_neutral[i], gyr_neutral[i]);
+        gyr_cal[i] = (i16)(*out++);
+        gyr_cal[i] |= (0xff00 & (*out++ << 8));
+        printf("%04x (%d) ", gyr_cal[i], gyr_cal[i]);
+    }
+    out = read_spi(0x6080, 6);
+    printf("\nAccel offset values: ");
+    for (int i = 0; i < 3; i++)
+    {
+        accel_offset[i] = (i16)(*out++);
+        accel_offset[i] |= (0xff00 & (*out++ << 8));
+        printf("%04x (%d) ", accel_offset[i], accel_offset[i]);
     }
     printf("\n");
+    for (int i = 0; i < 3; ++i)
+    {
+        accel_multiplier[i] = (float(4)) / (float)(accel_cal[i + 3] - accel_cal[i]);
+        gyro_multiplier[i] = (float)(816.0 / (float)(gyr_cal[i + 3] - gyr_cal[i]));
+    }
+    printf("multipliers: [%f %f %f], [%f %f %f]\n", accel_multiplier[0], accel_multiplier[1], accel_multiplier[2], gyro_multiplier[0], gyro_multiplier[1], gyro_multiplier[2]);
 }
 
 void JoyCon::get_stick_cal()
@@ -187,6 +201,7 @@ void JoyCon::setup_joycon(u8 leds)
     subcomm(&send_buf, 1, 0x1, 1);*/
     u8 send_buf = leds;
     subcomm(&send_buf, 1, SC_SET_PLAYER_LIGHTS, 1);
+    toggle_parameter(TP_IMU, true);
     set_report_type(0x30);
 }
 void JoyCon::toggle_parameter(ToggleParam tp, bool enable_, std::condition_variable *consume)
@@ -281,18 +296,17 @@ void JoyCon::process()
 
 void JoyCon::process_imu()
 {
+    // void *start_ptr = data;
+    i16 acc_r, gyr_r;
     // Process 3 IMU frames per packet
     for (int n = 0; n < 3; ++n)
     {
-        gyr_r[0] = (i16)(data[19 + n * 12] | ((data[20 + n * 12] << 8) & 0xff00));
-        gyr_r[1] = (i16)(data[21 + n * 12] | ((data[22 + n * 12] << 8) & 0xff00));
-        gyr_r[2] = (i16)(data[23 + n * 12] | ((data[24 + n * 12] << 8) & 0xff00));
-        acc_r[0] = (i16)(data[13 + n * 12] | ((data[14 + n * 12] << 8) & 0xff00));
-        acc_r[1] = (i16)(data[15 + n * 12] | ((data[16 + n * 12] << 8) & 0xff00));
-        acc_r[2] = (i16)(data[17 + n * 12] | ((data[18 + n * 12] << 8) & 0xff00));
-        // for (int i = 0; i < 3; ++i)
-        // {
-        //     acc_g[i] = acc_r[i] * 
-        // }
+        for (int i = 0; i < 3; ++i)
+        {
+            acc_r = (i16)(data[13 + n * 12 + i * 2] | ((data[14 + n * 12 + i * 2] << 8) & 0xff00));
+            gyr_r = (i16)(data[19 + n * 12 + i * 2] | ((data[20 + n * 12 + i * 2] << 8) & 0xff00));
+            acc_g[i] = accel_multiplier[i] * (acc_r - accel_offset[i]);
+            gyr_dps[i] = gyro_multiplier[i] * (gyr_r - gyr_cal[i]);
+        }
     }
 }

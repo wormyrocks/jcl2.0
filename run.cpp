@@ -30,6 +30,17 @@ void closeEvent(int s)
 };
 #endif
 
+JoyCon *FirstJoycon()
+{
+    if (right_joycons.size() > 0)
+        return right_joycons[0];
+    if (left_joycons.size() > 0)
+        return left_joycons[0];
+    if (pro_cons.size() > 0)
+        return pro_cons[0];
+    return NULL;
+}
+
 void on_sigint()
 {
     for (int i = 0; i < right_joycons.size(); ++i)
@@ -104,11 +115,11 @@ int main()
     /*    *macAddr = getMAC();
     std::cout << "MAC address: " << macAddr << std::endl;*/
     bool done = false;
-    int i = 0;
+    long i = 0;
     while (!done)
     {
         enumerateJoycons();
-        usleep(100000); // TODO: change to CV
+        usleep(500000); // TODO: change to CV
         if (signal_caught)
         {
             signal_caught = false;
@@ -116,13 +127,21 @@ int main()
             printf("on_sigint finished\n");
             done = true;
         }
-        if (i == 20)
+        if (i == 1)
         {
-            i = 0;
-            // printf("getBatteryLevel called\n");
-            // // float f = right_joycons[0]->GetBatteryLevelFloat();            
-            // right_joycons[0]->ToggleParameter(JoyCon::TP_IMU, true);
-            // printf("toggleIMU finished\n");
+            JoyCon *j = FirstJoycon();
+            if (j)
+            {
+                float *acc_g = j->GetRawAccel();
+                float *gyr_dps = j->GetRawGyro();
+                printf("accel data: [%f %f %f], gyro data: ", acc_g[0], acc_g[1], acc_g[2]);
+                printf("[%f %f %f]\n", gyr_dps[0], gyr_dps[1], gyr_dps[2]);
+                i = 0;
+                // printf("getBatteryLevel called\n");
+                // // float f = right_joycons[0]->GetBatteryLevelFloat();
+                // right_joycons[0]->ToggleParameter(JoyCon::TP_IMU, true);
+                // printf("toggleIMU finished\n");
+            }
         }
         ++i;
     }
