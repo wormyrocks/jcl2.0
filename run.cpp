@@ -127,7 +127,7 @@ int main()
             printf("on_sigint finished\n");
             done = true;
         }
-        if (i == 1)
+        if (i % 2 == 0)
         {
             JoyCon *j = FirstJoycon();
             if (j)
@@ -136,11 +136,11 @@ int main()
                 float *gyr_dps = j->GetRawGyro();
                 printf("accel data: [%f %f %f], gyro data: ", acc_g[0], acc_g[1], acc_g[2]);
                 printf("[%f %f %f]\n", gyr_dps[0], gyr_dps[1], gyr_dps[2]);
-                i = 0;
                 // printf("getBatteryLevel called\n");
                 // // float f = right_joycons[0]->GetBatteryLevelFloat();
                 // right_joycons[0]->ToggleParameter(JoyCon::TP_IMU, true);
                 // printf("toggleIMU finished\n");
+                i = 0;
             }
         }
         ++i;

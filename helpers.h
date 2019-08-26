@@ -134,11 +134,7 @@ void JoyCon::get_imu_cal()
         printf("%04x (%d) ", accel_offset[i], accel_offset[i]);
     }
     printf("\n");
-    for (int i = 0; i < 3; ++i)
-    {
-        accel_multiplier[i] = (float(4)) / (float)(accel_cal[i + 3] - accel_cal[i]);
-        gyro_multiplier[i] = (float)(816.0 / (float)(gyr_cal[i + 3] - gyr_cal[i]));
-    }
+    update_imu_cal_multipliers();
     printf("multipliers: [%f %f %f], [%f %f %f]\n", accel_multiplier[0], accel_multiplier[1], accel_multiplier[2], gyro_multiplier[0], gyro_multiplier[1], gyro_multiplier[2]);
 }
 
@@ -219,6 +215,7 @@ void JoyCon::set_imu_sensitivity(GyroScale gs, AccelScale as, GyroRate gr, Accel
     sendbuf[2] = (u8)gr;
     sendbuf[3] = (u8)af;
     subcomm(sendbuf, 4, SC_SET_IMU_SENSITIVITY, 1);
+    update_imu_cal_multipliers();
     if (consume != NULL)
         consume->notify_all();
 }
@@ -294,19 +291,31 @@ void JoyCon::process()
     }
 }
 
+// This doesn't entirely make sense to me yet either. Trying as much as possible to get away from use of magic numbers and draw only from datasheet
+// https://github.com/dekuNukem/Nintendo_Switch_Reverse_Engineering/blob/master/imu_sensor_notes.md#convert-to-basic-useful-data-using-spi-calibration
+void JoyCon::update_imu_cal_multipliers()
+{
+    for (int i = 0; i < 3; ++i)
+    {
+        accel_multiplier[i] = (float)(4) / (float)(accel_cal[i + 3] - accel_cal[i]);
+        gyro_multiplier[i] = (float)(816.0 / (float)(gyr_cal[i + 3] - gyr_cal[i]));
+    }
+}
+
 void JoyCon::process_imu()
 {
-    // void *start_ptr = data;
+    u8 *start_ptr = data + 13;
     i16 acc_r, gyr_r;
     // Process 3 IMU frames per packet
     for (int n = 0; n < 3; ++n)
     {
         for (int i = 0; i < 3; ++i)
         {
-            acc_r = (i16)(data[13 + n * 12 + i * 2] | ((data[14 + n * 12 + i * 2] << 8) & 0xff00));
-            gyr_r = (i16)(data[19 + n * 12 + i * 2] | ((data[20 + n * 12 + i * 2] << 8) & 0xff00));
+            acc_r = (i16)(start_ptr[i * 2] | ((start_ptr[1 + i * 2] << 8) & 0xff00));
+            gyr_r = (i16)(start_ptr[6 + i * 2] | ((start_ptr[7 + i * 2] << 8) & 0xff00));
             acc_g[i] = accel_multiplier[i] * (acc_r - accel_offset[i]);
             gyr_dps[i] = gyro_multiplier[i] * (gyr_r - gyr_cal[i]);
         }
+        start_ptr += 12;
     }
 }

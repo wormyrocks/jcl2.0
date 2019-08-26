@@ -1,3 +1,4 @@
+$(shell mkdir -p obj/cl)
 OS=$(shell uname)
 ifneq (,$(findstring MINGW,$(OS)))
 EXTENSION=.exe

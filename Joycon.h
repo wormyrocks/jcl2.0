@@ -86,38 +86,6 @@ public:
         AF_100HZ
     };
 
-    // class IMUSettings
-    // {
-    // private:
-    //     GyroScale gs;
-    //     AccelScale as;
-    //     GyroRate gr;
-    //     AccelFilter af;
-    //     float gyro_multiplier, acc_multiplier;
-    //     float AccMultiplier[3] = {0, 0, 0};
-    //     void Setup(GyroScale gs, AccelScale as, GyroRate gr, AccelFilter af)
-    //     {
-    //         acc_multiplier = AccelScaleMult[(int)as];
-    //         gyro_multiplier = GyroScaleMult[(int)gs] * 1.15;
-    //     }
-
-    // public:
-    //     IMUSettings(GyroScale gs, AccelScale as, GyroRate gr, AccelFilter af)
-    //     {
-    //         Setup(gs, as, gr, af);
-    //     }
-    //     IMUSettings()
-    //     {
-    //         Setup(GS_2000DPS, AS_8G, GR_208HZ, AF_100HZ);
-    //     }
-    //     GyroScale getgs() { return gs; };
-    //     AccelScale getas() { return as; };
-    //     GyroRate getgr() { return gr; };
-    //     AccelFilter getaf() { return af; };
-    //     float getAccMultiplier() { return acc_multiplier; };
-    //     float getGyroMultiplier() { return gyro_multiplier; };
-    //     i16 *getAccOrigin() { return AccelOrigin; };
-    // };
     enum SubcommandType
     {
         SC_NOTHING = 0x00,
@@ -183,6 +151,7 @@ private:
     void get_imu_cal();
     void setup_joycon(u8 leds);
     void set_report_type(u8 val);
+    void update_imu_cal_multipliers();
 
     // queue functions
     void get_battery_level(std::condition_variable *consume);
@@ -214,10 +183,18 @@ private:
     u16 stick_cal[8];
 
     // Constant values describing accel multipliers
-    const float AccelScaleMult[4] = {8000, 4000, 2000, 16000};
-    const float GyroScaleMult[4] = {250, 500, 1000, 2000};
-
+    // multipliers for 8G, 4G, 2G, 16G
+    const i16 AccelScaleCoeff[4] = {0x4000, 0x2000, 0x1000, 0x7fff};
+    const i16 GyroScaleCoeff[4] = {250, 500, 1000, 2000};
+    
     // Accel zero / neutral / sensitivity values from SPI
+    // accel_cal [0] = origin x
+    // accel_cal [1] = origin y
+    // accel_cal [2] = origin z
+    // accel_cal [3] = multiplier x
+    // accel_cal [4] = multiplier y
+    // accel_cal [5] = multiplier z
+
     i16 accel_cal[6];
     i16 gyr_cal[6];
 
