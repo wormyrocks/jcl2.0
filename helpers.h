@@ -197,7 +197,6 @@ void JoyCon::setup_joycon(u8 leds)
     subcomm(&send_buf, 1, SC_SET_PLAYER_LIGHTS, 1);
     toggle_parameter(TP_IMU, true);
     update_imu_cal_multipliers(AS_8G, GS_2000DPS);
-    // set_imu_sensitivity(GS_2000DPS, AS_16G, GR_833HZ, AF_100HZ, NULL);
     set_report_type(0x30);
 }
 void JoyCon::toggle_parameter(ToggleParam tp, bool enable_, std::condition_variable *consume)
@@ -295,14 +294,19 @@ void JoyCon::process()
 // https://github.com/dekuNukem/Nintendo_Switch_Reverse_Engineering/blob/master/imu_sensor_notes.md#convert-to-basic-useful-data-using-spi-calibration
 void JoyCon::update_imu_cal_multipliers(AccelScale as, GyroScale gs)
 {
-    accel_scale_factor = AccelScaleCoeff[(u8)as] * 0x800 / (float)accel_cal[3];
-    printf("Accel scale factor: %f", accel_scale_factor);
+    accel_scale_factor = (float)(AccelScaleCoeff[as]) * 0x800 / (float)accel_cal[3];
+    // 2000 * 2 * 1.15 / 65535 = ??/13371
+    // gyro_scale_factor = (float)(GyroScaleCoeff[gs] * 1.15) / 0x7fff * gyr_cal[3];
+    gyro_scale_factor = (float)GyroScaleCoeff[gs] / 2000;
     for (int i = 0; i < 3; ++i)
     {
-        accel_multiplier[i] = (float)accel_scale_factor / (float)(accel_cal[i + 3] - accel_cal[i]) * 4.0;
-        gyro_multiplier[i] = (float)(816.0 / (float)(gyr_cal[i + 3] - gyr_cal[i]));
+        accel_multiplier[i] = (float)4 / (float)(accel_cal[i + 3] - accel_cal[i]);
+        gyro_multiplier[i] = (float)(gyr_cal[i + 3] * 2000 * 1.15 / 0x7fff) / (float)(gyr_cal[i + 3] - gyr_cal[i]);
     }
-    printf("multipliers updated: [%f %f %f], [%f %f %f]\n", accel_multiplier[0], accel_multiplier[1], accel_multiplier[2], gyro_multiplier[0], gyro_multiplier[1], gyro_multiplier[2]);
+    AccelNoiseThreshold = 1640 / AccelScaleCoeff[as];
+    GyroNoiseThreshold = 14700 / (GyroScaleCoeff[gs] / 10);
+    printf("multipliers updated: [%f %f %f], [%f %f %f], [%f %f]\n", accel_multiplier[0], accel_multiplier[1], accel_multiplier[2], gyro_multiplier[0], gyro_multiplier[1], gyro_multiplier[2], accel_scale_factor, gyro_scale_factor);
+    printf("noise thresholds: [%d], [%d]\n", AccelNoiseThreshold, GyroNoiseThreshold);
 }
 
 void JoyCon::process_imu()
@@ -316,8 +320,13 @@ void JoyCon::process_imu()
         {
             acc_r = (i16)(start_ptr[i * 2] | ((start_ptr[1 + i * 2] << 8) & 0xff00));
             gyr_r = (i16)(start_ptr[6 + i * 2] | ((start_ptr[7 + i * 2] << 8) & 0xff00));
-            acc_g[i] = accel_multiplier[i] * (acc_r - accel_offset[i] / accel_scale_factor);
-            gyr_dps[i] = gyro_multiplier[i] * (gyr_r - gyr_cal[i]);
+            acc_g[i] = accel_multiplier[i] * (acc_r * accel_scale_factor - accel_offset[i]);
+            gyr_dps[i] = gyro_multiplier[i] * (gyr_r * gyro_scale_factor - gyr_cal[i]);
+            // if (gyr_r > GyroNoiseThreshold || acc_r > AccelNoiseThreshold)
+            // {
+            //     printf("accel data: [%f %f %f], gyro data: ", acc_g[0], acc_g[1], acc_g[2]);
+            //     printf("[%f %f %f]\n", gyr_dps[0], gyr_dps[1], gyr_dps[2]);
+            // }
         }
         start_ptr += 12;
     }

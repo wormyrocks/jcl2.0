@@ -140,7 +140,6 @@ int main()
                 // // float f = right_joycons[0]->GetBatteryLevelFloat();
                 // right_joycons[0]->ToggleParameter(JoyCon::TP_IMU, true);
                 // printf("toggleIMU finished\n");
-                i = 0;
             }
         }
         ++i;

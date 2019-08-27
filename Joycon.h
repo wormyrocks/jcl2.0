@@ -186,7 +186,7 @@ private:
     // multipliers for 8G, 4G, 2G, 16G
     const i16 AccelScaleCoeff[4] = {8, 4, 2, 16};
     const i16 GyroScaleCoeff[4] = {250, 500, 1000, 2000};
-    
+
     // Accel zero / neutral / sensitivity values from SPI
     // accel_cal [0] = origin x
     // accel_cal [1] = origin y
@@ -196,6 +196,9 @@ private:
     // accel_cal [5] = multiplier z
 
     float accel_scale_factor = 1;
+    float gyro_scale_factor = 1;
+    i16 AccelNoiseThreshold = 0;
+    i16 GyroNoiseThreshold = 0;
     i16 accel_cal[6];
     i16 gyr_cal[6];
 
