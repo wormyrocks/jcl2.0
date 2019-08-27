@@ -151,7 +151,7 @@ private:
     void get_imu_cal();
     void setup_joycon(u8 leds);
     void set_report_type(u8 val);
-    void update_imu_cal_multipliers();
+    void update_imu_cal_multipliers(AccelScale as, GyroScale gs);
 
     // queue functions
     void get_battery_level(std::condition_variable *consume);
@@ -184,7 +184,7 @@ private:
 
     // Constant values describing accel multipliers
     // multipliers for 8G, 4G, 2G, 16G
-    const i16 AccelScaleCoeff[4] = {0x4000, 0x2000, 0x1000, 0x7fff};
+    const i16 AccelScaleCoeff[4] = {8, 4, 2, 16};
     const i16 GyroScaleCoeff[4] = {250, 500, 1000, 2000};
     
     // Accel zero / neutral / sensitivity values from SPI
@@ -195,6 +195,7 @@ private:
     // accel_cal [4] = multiplier y
     // accel_cal [5] = multiplier z
 
+    float accel_scale_factor = 1;
     i16 accel_cal[6];
     i16 gyr_cal[6];
 
