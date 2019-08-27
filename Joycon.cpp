@@ -1,4 +1,5 @@
 #include <Joycon.h>
+#include "dcm.h"
 #include "helpers.h"
 #include <thread>
 #include <mutex>

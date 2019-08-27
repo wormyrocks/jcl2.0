@@ -311,8 +311,11 @@ void JoyCon::update_imu_cal_multipliers(AccelScale as, GyroScale gs)
 
 void JoyCon::process_imu()
 {
-    u8 *start_ptr = data + 13;
     i16 acc_r, gyr_r;
+    int dt = (data[1] - last_timestamp);
+    if (data[1] < last_timestamp)
+        dt += 0x100;
+    u8 *start_ptr = data + 13;
     // Process 3 IMU frames per packet
     for (int n = 0; n < 3; ++n)
     {
@@ -327,7 +330,26 @@ void JoyCon::process_imu()
             //     printf("accel data: [%f %f %f], gyro data: ", acc_g[0], acc_g[1], acc_g[2]);
             //     printf("[%f %f %f]\n", gyr_dps[0], gyr_dps[1], gyr_dps[2]);
             // }
+            float dt_sec = 0.005 * dt;
+            Kacc[0] = -acc_g[0];
+            Kacc[1] = -acc_g[1];
+            Kacc[2] = -acc_g[2];
+            vector3d_normalize(Kacc);
+            float wA[3];
+            vector3d_cross(dcmEst[2], Kacc, wA);
+            float wG[3];
+            wG[0] = -gyr_dps[0];
+            wG[1] = -gyr_dps[1];
+            wG[2] = -gyr_dps[2];
+            for (int q = 0; q < 3; q++)
+            {
+                wG[q] *= dt_sec; //scale by elapsed time to get angle in radians
+                //compute weighted average with the accelerometer correction vector
+                wG[q] = (wG[q] + filterweight * wA[q]) / (1.0 + filterweight);
+            }
+            dt = 1;
         }
         start_ptr += 12;
     }
+    last_timestamp = data[1] + 2;
 }

@@ -210,8 +210,14 @@ private:
     float gyro_multiplier[3];
 
     // IMU data
+    int last_timestamp;
     float acc_g[3];
     float gyr_dps[3];
+
+    // Starlino DCM temp variables
+    float dcmEst[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+    float Kacc[3] = {0, 0, 0};
+    float filterweight = 0.05;
 
     u8 packet_count = 0;
     u8 timestamp = 0;
