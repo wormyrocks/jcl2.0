@@ -15,8 +15,6 @@
 #endif
 #endif
 
-#include "enums.h"
-#include "constants.h"
 #include <iostream>
 #include <stdio.h>
 #include <vector>
@@ -25,26 +23,16 @@
 #include <deque>
 #include <functional>
 #include <assert.h>
-
-// Wrapper class.
-// Provides public functions accessible to people using the DLL
-class EXPORT_DECL JoyCon
-{
-public:
-    JoyCon(void *_jcobj);
-
-private:
-    const void *myobj;
-};
+#include "enums.h"
+#include "constants.h"
 
 // Actual class.
 // Abstracts away as much as possible.
-class JoyConObj
+class EXPORT_DECL Joycon
 {
 public:
-    JoyConObj(void *hidapi_handle, JOYCON_TYPE jtype, int number, const char *hostmac);
+    Joycon(void *handle_, JOYCON_TYPE type_, int num, const char *hostmac_);
     int Start(JOYCON_SCHEMA schema, bool enable_rumble);
-    JoyCon *interface;
 
 private:
     std::thread jcloop;

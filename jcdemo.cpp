@@ -30,14 +30,14 @@ void on_exit()
     jcCleanup();
 }
 
-void joyconConnected(JoyCon * j)
+void joyconConnected(Joycon * j)
 {
     printf("Joy-Con connection callback triggered.\n");
 }
 
 int main(int argc, char **argv)
 {
-    printf("start\n");
+    printf("Starting, press ctrl-c to exit.\n");
 #ifdef _WIN32
     SetConsoleCtrlHandler((PHANDLER_ROUTINE)closeEvent, TRUE);
 #else

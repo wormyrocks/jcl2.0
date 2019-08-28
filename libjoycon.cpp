@@ -1,6 +1,6 @@
 #include "libjoycon.h"
 
-void registerConnectionCallback(std::function<void(JoyCon *)> callback)
+void registerConnectionCallback(std::function<void(Joycon *)> callback)
 {
     connectionCallback = callback;
 }
@@ -17,10 +17,10 @@ void enumerateJoycons()
         hid_device *hidapi_handle = hid_open_path(right_joycon_devices->path);
         hid_set_nonblocking(hidapi_handle, false);
         printf("found right Joy-Con, registering as %d\n", allct);
-        JoyConObj *j = new JoyConObj(hidapi_handle, JOYCON_TYPE::RIGHT, ++allct, macAddr);
+        Joycon *j = new Joycon(hidapi_handle, JOYCON_TYPE::RIGHT, ++allct, macAddr);
         right_joycons.push_back(j);
         if (connectionCallback)
-            connectionCallback(j->interface);
+            connectionCallback(j);
         ++i;
     }
     i = 0;
@@ -32,10 +32,10 @@ void enumerateJoycons()
         hid_device *hidapi_handle = hid_open_path(left_joycon_devices->path);
         hid_set_nonblocking(hidapi_handle, false);
         printf("found left Joy-Con, registering as %d\n", allct);
-        JoyConObj *j = new JoyConObj(hidapi_handle, JOYCON_TYPE::LEFT, ++allct, macAddr);
+        Joycon *j = new Joycon(hidapi_handle, JOYCON_TYPE::LEFT, ++allct, macAddr);
         left_joycons.push_back(j);
         if (connectionCallback)
-            connectionCallback(j->interface);
+            connectionCallback(j);
         ++i;
     }
     i = 0;
@@ -47,10 +47,10 @@ void enumerateJoycons()
         hid_device *hidapi_handle = hid_open_path(pro_controller_devices->path);
         hid_set_nonblocking(hidapi_handle, false);
         printf("found Pro controller, registering as %d\n", allct);
-        JoyConObj *j = new JoyConObj(hidapi_handle, JOYCON_TYPE::PRO, ++allct, macAddr);
+        Joycon *j = new Joycon(hidapi_handle, JOYCON_TYPE::PRO, ++allct, macAddr);
         pro_cons.push_back(j);
         if (connectionCallback)
-            connectionCallback(j->interface);
+            connectionCallback(j);
         ++i;
     }
     hid_free_enumeration(left_joycon_devices);
@@ -74,23 +74,23 @@ void jcCleanup()
     hid_exit();
 }
 
-JoyCon *getFirstJoycon()
+Joycon *getFirstJoycon()
 {
     if (right_joycons.size() > 0)
-        return right_joycons[0]->interface;
+        return right_joycons[0];
     if (left_joycons.size() > 0)
-        return left_joycons[0]->interface;
+        return left_joycons[0];
     if (pro_cons.size() > 0)
-        return pro_cons[0]->interface;
+        return pro_cons[0];
     return NULL;
 }
 
-JoyCon *getJoycon(int i, JOYCON_TYPE j)
+Joycon *getJoycon(int i, JOYCON_TYPE j)
 {
     return NULL;
 }
 
-JoyCon *waitForJoycon()
+Joycon *waitForJoycon()
 {
     return NULL;
 }

@@ -5,17 +5,17 @@
 #endif
 #include "Joycon/Joycon.h"
 
-std::vector<JoyConObj *> left_joycons;
-std::vector<JoyConObj *> right_joycons;
-std::vector<JoyConObj *> pro_cons;
-std::function<void(JoyCon *)> connectionCallback = NULL;
+std::vector<Joycon *> left_joycons;
+std::vector<Joycon *> right_joycons;
+std::vector<Joycon *> pro_cons;
+std::function<void(Joycon *)> connectionCallback = NULL;
 char const *macAddr;
 bool inited = false;
 
 EXPORT_DECL void jcBegin();
 EXPORT_DECL void jcCleanup();
-EXPORT_DECL JoyCon *getFirstJoycon();
-EXPORT_DECL JoyCon *getJoycon(int i, JOYCON_TYPE j);
-EXPORT_DECL JoyCon *waitForJoycon();
-EXPORT_DECL void registerConnectionCallback(std::function<void(JoyCon *)> callback);
+EXPORT_DECL Joycon *getFirstJoycon();
+EXPORT_DECL Joycon *getJoycon(int i, JOYCON_TYPE j);
+EXPORT_DECL Joycon *waitForJoycon();
+EXPORT_DECL void registerConnectionCallback(std::function<void(Joycon *)> callback);
 #endif
