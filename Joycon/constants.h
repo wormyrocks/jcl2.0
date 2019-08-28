@@ -6,4 +6,19 @@
 #define JOYCON_R_ID 0x2007
 #define JOYCON_P_ID 0x2009
 
+#define u8 uint8_t
+#define u16 uint16_t
+#define u32 uint32_t
+#define i16 int16_t
+#define i32 int32_t
+
+#define DATA_BUFFER_SIZE 49
+#define OUT_BUFFER_SIZE 49
+
+#define SUBCOMM_ATTEMPTS_NUMBER 8
+
+const std::string button_names[BUTTONS_END] = {
+    "Y", "X", "B", "A", "L_SR", "L_SL", "R", "ZR", "-", "+", "RS", "LS", "HOME", "CAPTURE", "PAPERCLIP", "GRIP", "DOWN", "UP", "RIGHT", "LEFT", "R_SR", "R_SL", "L", "ZL"};
+const u8 report_type_names[RT_END] = {0x3f, 0x21, 0x30, 0x31};
+
 #endif

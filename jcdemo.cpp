@@ -30,9 +30,20 @@ void on_exit()
     jcCleanup();
 }
 
-void joyconConnected(Joycon * j)
+void joyconConnected(Joycon *j)
 {
     printf("Joy-Con connection callback triggered.\n");
+    j->Start(JoyconSchema::SCHEMA_NOCONFIG);
+}
+
+void newData(Joycon *j)
+{
+    printf("New data received from Joycon.\n");
+}
+
+void newEvent(Joycon *j)
+{
+    printf("New input event from Joycon.\n");
 }
 
 int main(int argc, char **argv)
@@ -45,7 +56,9 @@ int main(int argc, char **argv)
 #endif
     std::mutex mtx;
     std::unique_lock<std::mutex> lck(mtx);
-    registerConnectionCallback(joyconConnected);
+    registerCallback(joyconConnected, CallbackType::JOYCON_CALLBACK_CONNECTED);
+    registerCallback(newData, CallbackType::JOYCON_CALLBACK_NEWDATA);
+    registerCallback(newEvent, CallbackType::JOYCON_CALLBACK_NEWINPUT);
     jcBegin();
     while (!signal_caught)
     {

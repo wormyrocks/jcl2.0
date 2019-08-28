@@ -1,12 +1,13 @@
 #include "libjoycon.h"
 
-void registerConnectionCallback(std::function<void(Joycon *)> callback)
+void registerCallback(std::function<void(Joycon *)> callback, CallbackType cbt)
 {
-    connectionCallback = callback;
+    callbacks[(u8)cbt] = callback;
 }
 
 void enumerateJoycons()
 {
+    jcBegin();
     struct hid_device_info *right_joycon_devices = hid_enumerate(NINTENDO_ID, JOYCON_R_ID);
     int i = 0;
     int allct = right_joycons.size() + left_joycons.size() + pro_cons.size();
@@ -17,10 +18,10 @@ void enumerateJoycons()
         hid_device *hidapi_handle = hid_open_path(right_joycon_devices->path);
         hid_set_nonblocking(hidapi_handle, false);
         printf("found right Joy-Con, registering as %d\n", allct);
-        Joycon *j = new Joycon(hidapi_handle, JOYCON_TYPE::RIGHT, ++allct, macAddr);
+        Joycon *j = new Joycon(hidapi_handle, JoyconType::RIGHT, ++allct, macAddr, callbacks);
         right_joycons.push_back(j);
-        if (connectionCallback)
-            connectionCallback(j);
+        if (callbacks[CallbackType::JOYCON_CALLBACK_CONNECTED])
+            callbacks[CallbackType::JOYCON_CALLBACK_CONNECTED](j);
         ++i;
     }
     i = 0;
@@ -32,10 +33,10 @@ void enumerateJoycons()
         hid_device *hidapi_handle = hid_open_path(left_joycon_devices->path);
         hid_set_nonblocking(hidapi_handle, false);
         printf("found left Joy-Con, registering as %d\n", allct);
-        Joycon *j = new Joycon(hidapi_handle, JOYCON_TYPE::LEFT, ++allct, macAddr);
+        Joycon *j = new Joycon(hidapi_handle, JoyconType::LEFT, ++allct, macAddr, callbacks);
         left_joycons.push_back(j);
-        if (connectionCallback)
-            connectionCallback(j);
+        if (callbacks[CallbackType::JOYCON_CALLBACK_CONNECTED])
+            callbacks[CallbackType::JOYCON_CALLBACK_CONNECTED](j);
         ++i;
     }
     i = 0;
@@ -47,10 +48,10 @@ void enumerateJoycons()
         hid_device *hidapi_handle = hid_open_path(pro_controller_devices->path);
         hid_set_nonblocking(hidapi_handle, false);
         printf("found Pro controller, registering as %d\n", allct);
-        Joycon *j = new Joycon(hidapi_handle, JOYCON_TYPE::PRO, ++allct, macAddr);
+        Joycon *j = new Joycon(hidapi_handle, JoyconType::PRO, ++allct, macAddr, callbacks);
         pro_cons.push_back(j);
-        if (connectionCallback)
-            connectionCallback(j);
+        if (callbacks[CallbackType::JOYCON_CALLBACK_CONNECTED])
+            callbacks[CallbackType::JOYCON_CALLBACK_CONNECTED](j);
         ++i;
     }
     hid_free_enumeration(left_joycon_devices);
@@ -70,12 +71,14 @@ void jcBegin()
 
 void jcCleanup()
 {
+    jcBegin();
     inited = false;
     hid_exit();
 }
 
 Joycon *getFirstJoycon()
 {
+    jcBegin();
     if (right_joycons.size() > 0)
         return right_joycons[0];
     if (left_joycons.size() > 0)
@@ -85,12 +88,14 @@ Joycon *getFirstJoycon()
     return NULL;
 }
 
-Joycon *getJoycon(int i, JOYCON_TYPE j)
+Joycon *getJoycon(int i, JoyconType j)
 {
+    jcBegin();
     return NULL;
 }
 
 Joycon *waitForJoycon()
 {
+    jcBegin();
     return NULL;
 }

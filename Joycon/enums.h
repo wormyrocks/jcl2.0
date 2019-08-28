@@ -1,7 +1,7 @@
 #ifndef _ENUMS_H
 #define _ENUMS_H
 
-enum JOYCON_TYPE : int
+enum JoyconType : int
 {
     LEFT = 0,
     RIGHT = 1,
@@ -9,12 +9,13 @@ enum JOYCON_TYPE : int
     ANY = 3
 };
 
-enum JOYCON_SCHEMA : int
+enum JoyconSchema : int
 {
-    SCHEMA_NOSCHEMA,
+    SCHEMA_NOCONFIG,
+    SCHEMA_SIMPLE_INPUT,
     SCHEMA_GAMEPAD,
     SCHEMA_IMU,
-    SCHEMA_IRCAMERA,
+    SCHEMA_CAMERA,
 };
 
 enum ReportType
@@ -54,9 +55,6 @@ enum JOYCON_BUTTONS
     R_ZL,
     BUTTONS_END
 };
-
-const std::string button_names[BUTTONS_END] = {
-    "Y", "X", "B", "A", "L_SR", "L_SL", "R", "ZR", "-", "+", "RS", "LS", "HOME", "CAPTURE", "PAPERCLIP", "GRIP", "DOWN", "UP", "RIGHT", "LEFT", "R_SR", "R_SL", "L", "ZL"};
 
 enum GyroScale
 {
@@ -110,6 +108,14 @@ enum ToggleParam
     TP_IMU = SC_TOGGLE_IMU,
     TP_RUMBLE = SC_ENABLE_VIBRATION,
     TP_END
+};
+
+enum CallbackType
+{
+    JOYCON_CALLBACK_CONNECTED,
+    JOYCON_CALLBACK_NEWDATA,
+    JOYCON_CALLBACK_NEWINPUT,
+    JOYCON_CALLBACK_LENGTH
 };
 
 #endif
