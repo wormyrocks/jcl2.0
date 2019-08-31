@@ -7,11 +7,15 @@ void Joycon::threadAdapter(Joycon *caller)
 {
     caller->jcLoop();
 }
-int Joycon::hid_read_buffer(bool nonblock)
+int Joycon::hid_read_buffer(bool do_wait)
 {
-    if (nonblock)
-        return hid_read_timeout(static_cast<hid_device *>(hidapi_handle), data, DATA_BUFFER_SIZE, 100);
-    return hid_read(static_cast<hid_device *>(hidapi_handle), data, DATA_BUFFER_SIZE);
+    int ret;
+    ret = hid_read_timeout(static_cast<hid_device *>(hidapi_handle), data, DATA_BUFFER_SIZE, do_wait ? HID_READ_TIMEOUT : 0);
+    if (callbacks[CallbackType::JOYCON_CALLBACK_NEWDATA] && ret > 0)
+    {
+        callbacks[CallbackType::JOYCON_CALLBACK_NEWDATA](this);
+    }
+    return ret;
 }
 u8 *Joycon::read_spi(u32 addr, int len)
 {
@@ -88,7 +92,7 @@ void Joycon::jcLoop()
 {
     while (true)
     {
-        if (hid_read_buffer(true) > 0)
+        if (hid_read_buffer(false) > 0)
         {
             // TODO : should a long callback block this update loop? probably
             if (callbacks[CallbackType::JOYCON_CALLBACK_NEWDATA])
@@ -106,7 +110,6 @@ void Joycon::jcLoop()
         if (new_command)
         {
             cmdmtx->lock();
-            hid_set_nonblocking(static_cast<hid_device *>(hidapi_handle), false);
             new_command = false;
             while (!fq.empty())
             {

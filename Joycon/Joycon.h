@@ -27,9 +27,6 @@
 #include "enums.h"
 #include "constants.h"
 
-#define HID_READ_TIMEOUT 100
-#define CV_TIMEOUT 200
-
 // Actual class.
 // Abstracts away as much as possible.
 class EXPORT_DECL Joycon
@@ -60,7 +57,7 @@ private:
     bool subcomm(u8 *in, u8 len, SubcommandType subcomm, bool get_response);
     bool comm(u8 *in, u8 len, SubcommandType subcomm, bool get_response, u8 command);
     uint8_t *read_spi(u32 addr, int len);
-    int hid_read_buffer(bool nonblock);
+    int hid_read_buffer(bool do_wait);
     static void threadAdapter(Joycon *j);
     void jcLoop();
     bool process();

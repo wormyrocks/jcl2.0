@@ -41,12 +41,15 @@ void joyconConnected(Joycon *j)
     //     usleep(5000000);
     //     j->SetupSchema(JoyconSchema::SCHEMA_IMU);
     // }
+    printf("%f\n", j->GetBatteryLevelFloat());
+    printf("Rumble toggle successful? %d\n", j->ToggleParameter(ToggleParam::TP_RUMBLE, false));
+    j->SetupSchema(JoyconSchema::SCHEMA_IMU);
+    printf("%f\n", j->GetBatteryLevelFloat());
 }
 
 void newData(Joycon *j)
 {
-    printf("New data received from Joycon.\n");
-    printf("%f", j->GetBatteryLevelFloat());
+    printf("New data\n");
 }
 
 void newEvent(Joycon *j)

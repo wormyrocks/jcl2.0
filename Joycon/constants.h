@@ -15,6 +15,9 @@
 #define DATA_BUFFER_SIZE 49
 #define OUT_BUFFER_SIZE 49
 
+#define HID_READ_TIMEOUT 100
+#define CV_TIMEOUT 200
+
 #define SUBCOMM_ATTEMPTS_NUMBER 8
 
 const std::string button_names[BUTTONS_ERROR] = {
