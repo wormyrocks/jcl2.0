@@ -17,8 +17,7 @@
 
 #define SUBCOMM_ATTEMPTS_NUMBER 8
 
-const std::string button_names[BUTTONS_END] = {
+const std::string button_names[BUTTONS_ERROR] = {
     "Y", "X", "B", "A", "L_SR", "L_SL", "R", "ZR", "-", "+", "RS", "LS", "HOME", "CAPTURE", "PAPERCLIP", "GRIP", "DOWN", "UP", "RIGHT", "LEFT", "R_SR", "R_SL", "L", "ZL"};
-const u8 report_type_names[RT_END] = {0x3f, 0x21, 0x30, 0x31};
 
 #endif

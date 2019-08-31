@@ -15,6 +15,7 @@
 #endif
 #endif
 
+#include <condition_variable>
 #include <iostream>
 #include <stdio.h>
 #include <vector>
@@ -26,24 +27,44 @@
 #include "enums.h"
 #include "constants.h"
 
+#define HID_READ_TIMEOUT 100
+#define CV_TIMEOUT 200
+
 // Actual class.
 // Abstracts away as much as possible.
 class EXPORT_DECL Joycon
 {
 public:
     Joycon(void *handle_, JoyconType type_, int num, const char *hostmac_, std::function<void(Joycon *)> *callbacks);
-    int Start(JoyconSchema schema);
-    int Stop();
+    bool Start(JoyconSchema schema);
+    bool Stop();
+    volatile bool started = false;
+
+    // Threaded functions
     int SetupSchema(JoyconSchema schema);
+    int ToggleParameter(ToggleParam tp, bool enable);
+    uint16_t GetBatteryLevel();
+    float GetBatteryLevelFloat();
+    ReportType SetReportType(ReportType type);
 
 private:
+    // Threaded functions
+    int SetupSchema(JoyconSchema schema, std::condition_variable *consume);
+    int ToggleParameter(ToggleParam tp, bool enable, std::condition_variable *consume);
+    uint16_t GetBatteryLevel(std::condition_variable *consume);
+    ReportType SetReportType(ReportType type, std::condition_variable *consume);
+
+    // This MUST be called after pushing to function queue
+    void Unblock();
+
     bool subcomm(u8 *in, u8 len, SubcommandType subcomm, bool get_response);
     bool comm(u8 *in, u8 len, SubcommandType subcomm, bool get_response, u8 command);
-    u8 *read_spi(u32 addr, int len);
-    int hid_read_buffer(bool block);
+    uint8_t *read_spi(u32 addr, int len);
+    int hid_read_buffer(bool nonblock);
     static void threadAdapter(Joycon *j);
     void jcLoop();
     bool process();
+    void SendEmpty(); // Wake the main loop if we're not in a continuous polling mode
 
     // Send and receive buffers
     u8 data[DATA_BUFFER_SIZE];
@@ -57,7 +78,9 @@ private:
     std::function<void(Joycon *)> *callbacks;
     std::thread jcloop;
     volatile bool do_kill;
+    volatile bool new_command;
     std::mutex *datamtx;
+    std::mutex *killmtx;
     std::mutex *cmdmtx;
     std::deque<std::function<void()>> fq;
     volatile float stick[4];
@@ -66,6 +89,7 @@ private:
     void *hidapi_handle = NULL;
     bool kill_threads = false;
     int jc_num = 0;
+    u16 batteryLevel = 0;
 
     volatile ReportType report_type;
     volatile u32 rbuttons = 0;

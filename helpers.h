@@ -222,8 +222,8 @@ void JoyCon::set_imu_sensitivity(GyroScale gs, AccelScale as, GyroRate gr, Accel
 void JoyCon::get_battery_level(std::condition_variable *consume)
 {
     printf("get_battery_level\n");
-    batteryLevel = (data[16] << 8) | data[15];
     subcomm(NULL, 0, SC_GET_VOLTAGE, 1);
+    batteryLevel = (data[16] << 8) | data[15];
     if (consume != NULL)
         consume->notify_all();
 }

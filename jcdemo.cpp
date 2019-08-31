@@ -33,12 +33,20 @@ void on_exit()
 void joyconConnected(Joycon *j)
 {
     printf("Joy-Con connection callback triggered.\n");
-    j->Start(JoyconSchema::SCHEMA_NOCONFIG);
+    int ret = j->Start(JoyconSchema::SCHEMA_SIMPLE_INPUT);
+    printf("Start() exited with code %d\n", ret);
+    // if (ret)
+    // {
+    //     printf("Sleeping...");
+    //     usleep(5000000);
+    //     j->SetupSchema(JoyconSchema::SCHEMA_IMU);
+    // }
 }
 
 void newData(Joycon *j)
 {
     printf("New data received from Joycon.\n");
+    printf("%f", j->GetBatteryLevelFloat());
 }
 
 void newEvent(Joycon *j)

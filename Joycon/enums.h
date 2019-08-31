@@ -9,7 +9,7 @@ enum JoyconType : int
     ANY = 3
 };
 
-enum JoyconSchema : int
+enum JoyconSchema : uint8_t
 {
     SCHEMA_NOCONFIG,
     SCHEMA_SIMPLE_INPUT,
@@ -18,13 +18,16 @@ enum JoyconSchema : int
     SCHEMA_CAMERA,
 };
 
-enum ReportType
+enum ReportType : uint8_t
 {
-    RT_3F,
-    RT_21,
-    RT_30,
-    RT_31,
-    RT_END
+    RT_IR_00 = 0x00,
+    RT_IR_01 = 0x01,
+    RT_IR_02 = 0x02,
+    RT_IR_03 = 0x03,
+    RT_SIMPLEHID = 0x3f,
+    RT_FULL = 0x30,
+    RT_NFC_IR = 0x31,
+    RT_ERROR
 };
 
 enum JOYCON_BUTTONS
@@ -53,7 +56,7 @@ enum JOYCON_BUTTONS
     R_SL,
     R_L,
     R_ZL,
-    BUTTONS_END
+    BUTTONS_ERROR
 };
 
 enum GyroScale
@@ -62,7 +65,7 @@ enum GyroScale
     GS_500DPS,
     GS_1000DPS,
     GS_2000DPS,
-    GS_END
+    GS_ERROR
 };
 
 enum AccelScale

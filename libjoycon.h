@@ -18,4 +18,5 @@ EXPORT_DECL Joycon *getFirstJoycon();
 EXPORT_DECL Joycon *getJoycon(int i, JoyconType j);
 EXPORT_DECL Joycon *waitForJoycon();
 EXPORT_DECL void registerCallback(std::function<void(Joycon *)> callback, CallbackType cbt);
+
 #endif
