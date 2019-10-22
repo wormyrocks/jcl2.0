@@ -137,7 +137,7 @@ bool Joycon::Start(JoyconSchema schema)
     datamtx = new std::mutex();
     killmtx = new std::mutex();
     cmdmtx = new std::mutex();
-    std::thread tmp(jcLoop, this);
+    std::thread tmp(threadAdapter, this);
     std::swap(tmp, jcloop);
     assert(jcloop.joinable());
     if (SetupSchema(schema))
@@ -206,7 +206,7 @@ void Joycon::SendEmpty()
 
 int Joycon::SetupSchema(JoyconSchema schema)
 {
-    printf("Switching to schema %d...");
+    printf("Switching to schema %d...", (int)schema);
     if (schema == SCHEMA_NOCONFIG)
         return 1;
     std::mutex mtx;

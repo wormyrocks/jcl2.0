@@ -12,6 +12,11 @@ EXTRA_CFLAGS=-static-libstdc++ -O4
 PLATFORM=windows
 endif
 ifeq ($(OS),Linux)
+SWITCHES=-pthread -ludev
+LIB_CPPFLAGS=-shared
+EXTRA_CPPFLAGS=#-I/usr/include/libusb-1.0
+PLATFORM=linux
+LIBEXTENSION=.so
 endif
 ifeq ($(OS),Darwin)
 SWITCHES=-framework IOKit -framework CoreFoundation

@@ -22,6 +22,7 @@
 #include <thread>
 #include <mutex>
 #include <deque>
+#include <signal.h>
 #include <functional>
 #include <assert.h>
 #include "enums.h"

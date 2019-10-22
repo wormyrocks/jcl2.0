@@ -19,7 +19,7 @@ BOOL WINAPI closeEvent(DWORD dwType)
 #else
 void closeEvent(int s)
 {
-    exit_cv->notify_all();
+    exit_cv.notify_all();
     signal_caught = true;
     return;
 };
